@@ -4,16 +4,27 @@ Projekt został utworzony za pomocą [Create React App](https://github.com/faceb
 
 Frontend jest przeznaczony do lokalnej gry ze znajomymi. Po uruchomieniu backendu komputery i telefony muszą być w tej samej sieci Wi-Fi.
 
+## Instalacja
+
+W katalogu `frontend` zainstaluj zależności:
+
+```powershell
+npm install
+Copy-Item .env.example .env.local
+```
+
+Plik `.env.local` jest lokalny i nie powinien być publikowany. Ustaw w nim adres IP komputera, na którym działa backend.
+
 ## Uruchomienie dla gry lokalnej
 
 W PowerShell:
 
 ```powershell
-cd D:\Secret-Hitler-Online-development\frontend
+cd frontend
 npm.cmd run devLocal
 ```
 
-Otwórz frontend na komputerze pod adresem `http://192.168.1.17:3000`. W lobby pojawi się link i kod QR, które można przekazać graczom korzystającym z telefonów. Jeśli adres IP komputera jest inny, zaktualizuj `frontend/.env.local`.
+Otwórz frontend na komputerze pod adresem `http://localhost:3000`. W lobby pojawi się link i kod QR, które można przekazać graczom korzystającym z telefonów. Jeśli adres IP komputera jest inny, zaktualizuj `frontend/.env.local`.
 
 ## Dostępne skrypty
 

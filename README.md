@@ -10,26 +10,109 @@ Gracze dzielą się na Liberałów, Faszystów i jednego ukrytego Hitlera. Liber
 
 Czy uda ci się znaleźć i powstrzymać Sekretnego Hitlera?
 
+## Wymagania
+
+- Windows 10/11, macOS albo Linux
+- Java 17 lub nowsza
+- Node.js 18 lub nowszy oraz npm
+- Opcjonalnie Docker Desktop, jeśli chcesz uruchomić cały projekt jednym poleceniem
+
+## Instalacja
+
+Sklonuj repozytorium i zainstaluj zależności frontendu:
+
+```powershell
+git clone https://github.com/olek285/Secret-Hitler-Online.git
+cd Secret-Hitler-Online
+cd frontend
+npm install
+cd ..
+```
+
+Nie dodawaj do repozytorium pliku `frontend/.env.local`. Zawiera on konfigurację konkretnej sieci. Utwórz go lokalnie na podstawie szablonu:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+Następnie otwórz `frontend/.env.local` i ustaw adres IP komputera w sieci Wi-Fi:
+
+```dotenv
+HOST=0.0.0.0
+REACT_APP_DEBUG=DEBUG
+REACT_APP_SERVER_ADDRESS=192.168.1.17:4040
+REACT_APP_SERVER_ADDRESS_HTTP=http://192.168.1.17:4040
+REACT_APP_WEBSOCKET_HEADER=ws://
+```
+
+Zastąp `192.168.1.17` adresem IP swojego komputera. Możesz go sprawdzić poleceniem `ipconfig`.
+
 ### Jak grać lokalnie
-1. Uruchom backend na komputerze:
+
+Otwórz dwa terminale w katalogu głównym projektu.
+
+1. W pierwszym terminalu uruchom backend:
 
    ```powershell
-   cd C:\Secret-Hitler-Online-development\backend
+   cd backend
    .\run-local.bat
    ```
 
 2. W drugim terminalu uruchom frontend:
 
    ```powershell
-   cd C:\Secret-Hitler-Online-development\frontend
+   cd frontend
    npm.cmd run devLocal
    ```
 
-3. Otwórz grę na komputerze pod adresem `http://192.168.1.1:3000`.
+3. Otwórz grę na komputerze pod adresem `http://localhost:3000`.
 4. Utwórz poczekalnię i pokaż znajomym kod QR albo skopiuj link z lobby.
 5. Znajomi otwierają link na telefonach podłączonych do tej samej sieci Wi-Fi.
 
-Adres `192.168.1.1` jest przykładowym adresem komputera. Jeśli komputer ma inny adres w sieci lokalnej, zmień go w `frontend/.env.local`. Windows może poprosić o zezwolenie na połączenia dla Javy i Node.js w sieci prywatnej.
+Windows może poprosić o zezwolenie na połączenia dla Javy i Node.js w sieci prywatnej. Backend działa domyślnie na porcie `4040`, a frontend na porcie `3000`.
+
+### Uruchomienie przez Docker
+
+Jeśli masz Docker Desktop, możesz uruchomić backend, frontend i PostgreSQL razem:
+
+```powershell
+docker compose up --build
+```
+
+Frontend będzie dostępny pod adresem `http://localhost:3000`. Zatrzymanie usług:
+
+```powershell
+docker compose down
+```
+
+### Najczęstsze problemy
+
+- `npm` nie jest rozpoznawany — zainstaluj Node.js i uruchom ponownie terminal.
+- Gradle nie startuje — sprawdź, czy `java -version` pokazuje Java 17 lub nowszą.
+- Telefony nie mogą wejść do gry — sprawdź, czy są w tej samej sieci Wi-Fi, używasz właściwego adresu IPv4 oraz zezwoliłeś Javie i Node.js na połączenia w sieci prywatnej.
+- Port `3000` albo `4040` jest zajęty — zamknij proces, który go używa, albo zmień porty w konfiguracji.
+
+### Dodanie projektu do GitHub
+
+Po sklonowaniu lub przygotowaniu projektu sprawdź, czy pliki lokalne nie są śledzone:
+
+```powershell
+git status
+git check-ignore frontend/.env.local
+```
+
+`frontend/.env.local` oraz `node_modules` są wykluczone przez `.gitignore`. Do repozytorium dodawaj tylko `frontend/.env.example`, który pokazuje wymaganą konfigurację bez lokalnych adresów i sekretów.
+
+Jeśli GitHub poprosi o logowanie, wykonaj:
+
+```powershell
+gh auth login
+git add .
+git commit -m "Update project documentation"
+git push origin development
+```
+
+Do logowania można też użyć tokena GitHub zamiast hasła. Token wkleja się w terminalu jako hasło i nie zapisuje się go w żadnym pliku projektu.
 
 Jednocześnie może grać do 10 osób. W lobby można również ustawić własne zdjęcie avatara — jest ono automatycznie przycinane i kompresowane.
 
