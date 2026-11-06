@@ -1,0 +1,27 @@
+# Build Directories + Binary Files
+build
+out
+bin
+*.jar
+
+# Gradle stored files
+.gradle
+
+# VSCode Workspace Configuration
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+.vscode/
+
+# Firebase Hosting Files
+**/.firebase
+
+# Node
+**/node_modules/
+
+# Local environment files
+**/.env.local
+**/.env.*.local
+!**/.env.example

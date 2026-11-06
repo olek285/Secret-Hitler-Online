@@ -1,0 +1,66 @@
+@import '../variables.css';
+
+#player-display {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px;
+}
+
+#player-display-container {
+    display: flex;
+    flex-direction: row;
+
+}
+
+#player-display-text-container {
+    display: inline-block;
+    width: min-content;
+    margin-top: auto;
+}
+
+#player-display-label {
+    display: inline-block;
+    width: 15vmin;
+    font-size: calc(4px + 3vmin);
+    font-weight: normal;
+    font-family: var(--headerFont);
+    color: var(--textColorWhite);
+    margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+    #player-display {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px 8px;
+        padding: 10px 8px 14px;
+    }
+
+    #player-display-container {
+        display: contents;
+    }
+
+    #player-display-label {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 3px 4px;
+        border-radius: 6px;
+        background: var(--statusBarColor);
+        font-size: clamp(0.65rem, 3.2vw, 0.9rem);
+        line-height: 1.1;
+    }
+
+    #player-display-text-container {
+        min-width: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0 2px;
+        box-sizing: border-box;
+    }
+
+    #player-display-text-container:has(#player-display-label) {
+        padding-top: 2px;
+    }
+}

@@ -1,0 +1,133 @@
+@import '../variables.css';
+
+#policy-enacted-container {
+    display: flex;
+    width: 20vmin;
+    height: 26vmin;
+    margin: auto auto;
+    position: relative;
+    perspective: 1000px;
+    overflow: visible;
+}
+
+#policy-enacted-cover-front, #policy-enacted-cover-back {
+    position: absolute;
+    width: auto;
+    height: 26vmin;
+    z-index: 54;
+    transition-timing-function: linear;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden; /* Safari */
+    -moz-backface-visibility: hidden;
+    left: 0;
+    top: 0;
+    transition: 1s transform ease, 0.5s left ease-in-out;
+}
+
+#policy-enacted-cover-front.show-policy-shift {
+    left: -100%;
+}
+
+
+#policy-enacted-cover-front.show-policy-flip {
+    transform: rotateY(-180deg);
+    z-index: 53;
+}
+
+#policy-enacted-cover-back {
+    transform: rotateY(180deg);
+}
+
+#policy-enacted-cover-back.show-policy-shift {
+    left: 0;
+}
+
+#policy-enacted-cover-back.show-policy-flip {
+    transform: rotateY(0deg);
+}
+
+#policy-enacted-back {
+    position: absolute;
+    width: auto;
+    height: 26vmin;
+    z-index: 51;
+    left: 0;
+    transition: 0.5s left;
+    transition-timing-function: ease-in-out;
+}
+
+#policy-enacted-back.show-policy-shift{
+    left: 0;
+}
+
+#policy-enacted-policy {
+    position: absolute;
+    width: auto;
+    height: 20vmin;
+    max-height: 220px;
+    left: -100%;
+    top: 3vmin;
+    z-index: 52;
+    transition: 0.5s left;
+    transition-timing-function: ease-in-out;
+}
+
+#policy-enacted-policy.show-policy-shift{
+    left: 0;
+}
+
+#policy-enacted-cover-front.policy-folder-open {
+    left: -100%;
+}
+
+#policy-enacted-cover-back.policy-folder-open {
+    left: 0;
+}
+
+#policy-enacted-policy.policy-folder-open {
+    left: -100%;
+}
+
+#policy-enacted-policy.policy-folder-inserted {
+    left: 0;
+}
+
+#policy-enacted-cover-front.policy-folder-inserted {
+    left: -100%;
+}
+
+#policy-enacted-cover-front.policy-folder-closed {
+    left: 0;
+    z-index: 54;
+}
+
+#policy-enacted-cover-back.policy-folder-closed {
+    left: 0;
+    z-index: 53;
+}
+
+#policy-enacted-policy.policy-folder-closed {
+    left: 0;
+    z-index: 52;
+}
+
+@media (max-width: 600px) {
+    #policy-enacted-container {
+        width: 34vw;
+        height: 44vw;
+        max-width: 220px;
+        max-height: 285px;
+    }
+
+    #policy-enacted-cover-front, #policy-enacted-cover-back,
+    #policy-enacted-back {
+        height: 44vw;
+        max-height: 285px;
+    }
+
+    #policy-enacted-policy {
+        height: 32vw;
+        max-height: 210px;
+        top: 6vw;
+    }
+}

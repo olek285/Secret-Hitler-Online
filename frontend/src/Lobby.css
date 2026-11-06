@@ -1,0 +1,127 @@
+@import './variables.css';
+
+#lobby-lower-container {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+}
+
+#lobby-player-area-container {
+    text-align: left;
+}
+
+#lobby-player-text-choose-container {
+    text-align: left;
+    display: flex;
+    flex-direction: row;
+    width: 90vw;
+    max-width: 655px;
+}
+
+#lobby-change-icon-button {
+    margin-left: auto;
+}
+
+#lobby-player-count-text {
+    align-self: center;
+    font-size: calc(12px + 2vmin);
+}
+
+#lobby-player-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#lobby-player-container > * {
+    max-width: 22vw;
+}
+
+.lobby-share {
+    display: flex;
+    justify-content: center;
+    margin: 12px 0;
+}
+
+.lobby-link-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lobby-link-row textarea {
+    flex: 1;
+    width: auto;
+}
+
+#lobby-player-placeholder {
+    width: 20vmin;
+    max-width: 16vh;
+    height: auto;
+    image-rendering: crisp-edges;
+    display: block;
+    margin: 5px;
+    border-radius: 16%/10%;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+#lobby-button-container {
+    display: inline-block;
+    flex-direction: column;
+    max-width: 700px;
+}
+
+#lobby-vip-text {
+    margin-bottom: 0;
+    text-align: center;
+}
+
+#lobby-text-container {
+    display: inline-block;
+    margin-top: 10px;
+    max-width: 700px;
+}
+
+#lobby-warning-text {
+    margin: 10px 0;
+    font-weight: 300;
+    text-align: center;
+}
+
+@media (max-width: 600px) {
+    #lobby-player-text-choose-container {
+        align-items: center;
+        width: 100%;
+    }
+
+    #lobby-change-icon-button {
+        margin: 8px 0 8px auto;
+        padding: 10px 12px;
+        font-size: 1rem;
+    }
+
+    .lobby-link-row {
+        flex-direction: column;
+    }
+
+    .lobby-link-row textarea {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .lobby-link-row button {
+        margin: 8px;
+    }
+
+    #lobby-player-container > * {
+        max-width: 30vw;
+    }
+}
+
+#lobby-about-text {
+    margin: 10px 10px;
+    font-weight: 300;
+}
