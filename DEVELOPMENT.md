@@ -1,67 +1,68 @@
-# Development setup for Secret Hitler Online
+# Konfiguracja lokalna polskiej wersji
 
-## Quick start using Docker:
-- Run everything with Docker Compose (DB + backend + frontend):
-  - `docker compose up --build`
-  - Open frontend: [http://localhost:3000](http://localhost:3000)
-  - Backend health: [http://localhost:4040/ping](http://localhost:4040/ping)
-- Alternative: only DB in Docker, run app locally:
-  - `docker compose up -d db`  (or use docker run …)
-  - `export DATABASE_URL=postgres://secret:secret@localhost:5432/secrethitler`
-  - In backend/: `./gradlew runLocal`
-  - In frontend/: `npm install && npm run devLocal`
-  - Open frontend: [http://localhost:3000](http://localhost:3000)
+Ta wersja jest przeznaczona do uruchamiania serwera na własnym komputerze i gry ze znajomymi na telefonach w tej samej sieci Wi-Fi.
 
-Your setup will vary depending on if you're only making changes to the frontend, or if you're making changes to the frontend and the backend at once.
+## Wymagania
 
-## Frontend Only
+- Java,
+- Node.js i npm,
+- Windows z dostępem do prywatnej sieci lokalnej.
 
-Follow these instructions if you are only making changes to the frontend. These instructions will allow you to connect to the development server rather than needing to run the instance locally.
+## Uruchomienie gry w Windows
 
-### Running frontend server
+Uruchom backend w pierwszym terminalu:
 
-Open a terminal window and run the following commands to clone the project and set up the frontend dependencies:
+```powershell
+cd D:\Secret-Hitler-Online-development\backend
+.\run-local.bat
+```
 
-```bash
-git clone git@github.com:ShrimpCryptid/Secret-Hitler-Online.git
-cd Secret-Hitler-Online/frontend
+W drugim terminalu uruchom frontend:
 
+```powershell
+cd D:\Secret-Hitler-Online-development\frontend
+npm.cmd run devLocal
+```
+
+Na komputerze otwórz `http://192.168.1.17:3000`. Utwórz lobby, a następnie udostępnij znajomym link lub kod QR widoczny w lobby. Telefony muszą być podłączone do tej samej sieci Wi-Fi.
+
+Adres `192.168.1.17` jest przykładowy. Jeśli komputer ma inny adres lokalny, zmień wartości w `frontend/.env.local`:
+
+```text
+REACT_APP_SERVER_ADDRESS=ADRES_IP_KOMPUTERA:4040
+REACT_APP_SERVER_ADDRESS_HTTP=http://ADRES_IP_KOMPUTERA:4040
+```
+
+Windows może poprosić o zezwolenie na połączenia dla Javy i Node.js w sieci prywatnej.
+
+## Praca tylko nad frontendem
+
+Jeśli backend działa już na komputerze, uruchom frontend:
+
+```powershell
+cd D:\Secret-Hitler-Online-development\frontend
 npm install
-npm run devServer
+npm.cmd run devLocal
 ```
 
-The webpage should open automatically in your browser, but is usually hosted at [localhost:3000](http://localhost:3000).
+## Sprawdzanie zmian
 
-## Changing frontend + backend
+Po zmianach we frontendzie:
 
-If you're modifying the backend, you'll need to run the server locally. You'll need two terminal windows to run the frontend and backend.
-
-### Running backend server
-
-In your first terminal, clone the repo if you haven't yet. Navigate to the `backend` subdirectory, then use gradle to start the server.
-
-```bash
-git clone git@github.com:ShrimpCryptid/Secret-Hitler-Online.git
-cd Secret-Hitler-Online/backend
-
-./gradlew runLocal
+```powershell
+cd D:\Secret-Hitler-Online-development\frontend
+npm.cmd run build
 ```
 
-This will start the backend server at [`http://localhost:4040`](http://localhost:4040) by default. This will also set the server in debug-mode, so the CORS policy will not block access from the frontend.
+Po zmianach w backendzie:
 
-**Every time you make changes to Java files, you'll need to stop and restart the development server.**
-
-You can also run the backend-server using your preferred IDE by launching the Main-method in `ApplicationTest` found in the test directory.
-
-### Running frontend server
-
-Open another terminal at the root of the project, and run the following commands.
-
-```bash
-cd frontend
-
-npm install
-npm run devLocal
+```powershell
+cd D:\Secret-Hitler-Online-development\backend
+.\gradlew.bat compileJava
 ```
 
-Note: You may need to modify `.env.local` based on the address your dev server is mounted to. By default, `.env.local` is configured to use `localhost:4040`.
+Backend należy zatrzymać i uruchomić ponownie po zmianach w kodzie Java.
+
+## Oryginalny projekt
+
+Ta wersja bazuje na repozytorium [ShrimpCryptid/Secret-Hitler-Online](https://github.com/ShrimpCryptid/Secret-Hitler-Online).

@@ -1,36 +1,58 @@
-# Secret-Hitler-Online
+# Secret Hitler — polska wersja lokalna
 ![](https://i.postimg.cc/zvnLRbqq/place-policy.gif)
 
-A fan-made web adaptation of [Secret Hitler](https://secrethitler.com), a social deduction board game for up to 10 players by Goat, Wolf & Cabbage. You can play it with friends at [secret-hitler.online](https://secret-hitler.online)!
+Polska, lokalna wersja fanowskiej adaptacji gry [Secret Hitler](https://secrethitler.com) — gry dedukcji społecznej dla maksymalnie 10 osób autorstwa Goat, Wolf & Cabbage. Ta wersja jest przeznaczona do uruchomienia serwera na własnym komputerze i grania ze znajomymi na telefonach w tej samej sieci Wi-Fi.
 
-### The Game
-In the game, players are divided into Liberals, Fascists, and one secret Hitler. The Liberals must work together (or not) to discover the secret Hitler hiding in their midst, all while the Fascists try to elevate the secret Hitler to power. Pass policies to achieve victory and unlock presidential powers to investigate your friends. 
+Projekt bazuje na oryginalnym repozytorium [ShrimpCryptid/Secret-Hitler-Online](https://github.com/ShrimpCryptid/Secret-Hitler-Online).
 
-Can you find and stop the Secret Hitler?
+### Gra
+Gracze dzielą się na Liberałów, Faszystów i jednego ukrytego Hitlera. Liberałowie muszą współpracować (albo nie), aby odkryć ukrywającego się wśród nich Hitlera, podczas gdy Faszyści próbują wynieść go do władzy. Uchwalajcie ustawy, aby osiągnąć zwycięstwo, i odblokowujcie uprawnienia prezydenta, by badać swoich znajomych.
 
-### How to Play: 
-Go to [secret-hitler.online](https://secret-hitler.online) and open a new lobby! Use the lobby's code or the provided link to invite your friends. You can play with up to 10 players at once!
+Czy uda ci się znaleźć i powstrzymać Sekretnego Hitlera?
 
-There are instructions on how to play the game provided on the website, and plenty of helpful tips are provided for first-time players. The game takes care of rules for you, making it easy to pick up and play. 
+### Jak grać lokalnie
+1. Uruchom backend na komputerze:
 
-For more information, read the [official rulebook here](https://www.secrethitler.com/assets/Secret_Hitler_Rules.pdf).
+   ```powershell
+   cd C:\Secret-Hitler-Online-development\backend
+   .\run-local.bat
+   ```
 
-## About this project
-### Technical Details
-The Java server is divided into the [game simulation](src/main/java/game) and the [REST API](src/main/java/server). Communication between the server and client is done via websocket and HTTP requests, using the [Javalin library](https://javalin.io/).
+2. W drugim terminalu uruchom frontend:
 
-The [webpage](/secret-hitler-online-interface) is written in [React](https://reactjs.org/), and features animations created with CSS. Assets were either adapted from the original board game or created using [Inkscape](https://inkscape.org/).
+   ```powershell
+   cd C:\Secret-Hitler-Online-development\frontend
+   npm.cmd run devLocal
+   ```
 
-### Creative Commons License and Credit
-Secret Hitler Online is licensed under [Creative Commons BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/), and is adapted from the original board game released by Goat, Wolf & Cabbage (© 2016-2020). 
+3. Otwórz grę na komputerze pod adresem `http://192.168.1.1:3000`.
+4. Utwórz poczekalnię i pokaż znajomym kod QR albo skopiuj link z lobby.
+5. Znajomi otwierają link na telefonach podłączonych do tej samej sieci Wi-Fi.
 
-*(This project is not affiliated with or endorsed by Goat, Wolf & Cabbage.)*
+Adres `192.168.1.1` jest przykładowym adresem komputera. Jeśli komputer ma inny adres w sieci lokalnej, zmień go w `frontend/.env.local`. Windows może poprosić o zezwolenie na połączenia dla Javy i Node.js w sieci prywatnej.
 
-#### What's changed from the original?
+Jednocześnie może grać do 10 osób. W lobby można również ustawić własne zdjęcie avatara — jest ono automatycznie przycinane i kompresowane.
+
+Na stronie znajdują się instrukcje gry i pomocne wskazówki dla nowych graczy. Gra pilnuje zasad, więc można szybko rozpocząć zabawę.
+
+Więcej informacji znajdziesz w [oficjalnej instrukcji](https://www.secrethitler.com/assets/Secret_Hitler_Rules.pdf).
+
+## O projekcie i autorach
+### Szczegóły techniczne
+Serwer Java jest podzielony na [symulację gry](backend/src/main/java/game) i [REST API](backend/src/main/java/server). Komunikacja między serwerem i klientem odbywa się przez WebSocket oraz żądania HTTP z użyciem biblioteki [Javalin](https://javalin.io/).
+
+Frontend jest napisany w [React](https://reactjs.org/) i wykorzystuje animacje CSS. Grafiki zaadaptowano z oryginalnej gry planszowej lub utworzono w [Inkscape](https://inkscape.org/).
+
+### Licencja Creative Commons i autorzy
+Secret Hitler Online jest udostępniany na licencji [Creative Commons BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) i stanowi adaptację oryginalnej gry planszowej wydanej przez Goat, Wolf & Cabbage (© 2016–2020).
+
+*(Projekt nie jest powiązany z Goat, Wolf & Cabbage ani przez nich zatwierdzony.)*
+
+#### Co zmieniono względem oryginału?
 ![](https://i.postimg.cc/cCNCZxw2/show-votes.gif)
-- Artwork for the boards, policy deck, identity cards, party cards, and liberal/fascist icons were adapted for the website with some minor modifications (rounding corners, adding depth, shadows).
-- Custom assets (made in Inkscape) were added based on the style of the original, most notably for the election tracker, policy reveal popup windows, and the player icons and tiles.
-- Where possible, fonts were replaced with ones licensed under the [Open Font License](https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL), namely [Germania One](https://fonts.google.com/specimen/Germania+One) and [Montserrat](https://fonts.google.com/specimen/Montserrat).
-- The web interface, animations, and server are new additions that use the same rules from the original game.
-
-### Report problems or suggest features on the [Issues page](https://github.com/ShrimpCryptid/Secret-Hitler-Online/issues).
+- Grafiki plansz, talii ustaw, kart tożsamości i partii oraz ikon Liberałów i Faszystów zaadaptowano na potrzeby strony, wprowadzając drobne zmiany (zaokrąglone rogi, głębię i cienie).
+- Dodano własne grafiki utworzone w Inkscape, utrzymane w stylu oryginału — przede wszystkim licznik wyborów, okna ujawniania ustaw oraz ikony i kafelki graczy.
+- Interfejs został przetłumaczony na język polski i dopasowany do ekranów telefonów.
+- Dodano lokalne lobby, link oraz kod QR do dołączania przez telefony w sieci Wi-Fi.
+- Dodano własne avatary graczy z automatycznym przycięciem i kompresją zdjęć.
+- Interfejs, animacje i serwer są nowymi elementami, które wykorzystują te same zasady co oryginalna gra.
