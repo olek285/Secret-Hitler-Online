@@ -19,9 +19,9 @@ Zainstaluj zależności frontendu:
 ```powershell
 cd frontend
 npm install
-Copy-Item .env.example .env.local
-```
 
+```
+Skopiować plik .env.example (szablon) i zmienić na .env.local
 Jeśli grasz z innymi osobami przez Wi-Fi, ustaw w `frontend/.env.local` adres IP komputera zamiast `localhost`.
 
 Uruchom backend i frontend w dwóch terminalach:
