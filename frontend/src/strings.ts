@@ -80,6 +80,7 @@ export const lobby = {
   qrCaption: "Zaproś więcej graczy: zeskanuj, żeby dołączyć",
   hideCounts: "Ukryj liczbę kart",
   hostOnly: "ustawia host",
+  customRules: "Domyślnie: zasady klasyczne. Zmień przed startem gry.",
 };
 
 export const game = {

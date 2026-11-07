@@ -32,9 +32,9 @@ public class SecretHitlerGame implements Serializable {
     // of players. - - - - - 5 6 7 8 9 10
     public static final int[] NUM_FASCISTS_FOR_PLAYERS = { -1, -1, -1, -1, -1, 1, 1, 2, 2, 3, 3 };
 
-    // The number of fascist and liberal policies in a standard deck.
-    public static final int NUM_FASCIST_POLICIES = 11;
-    public static final int NUM_LIBERAL_POLICIES = 6;
+    // The number of policies in the standard deck. Custom games use GameSettings.
+    public static final int NUM_FASCIST_POLICIES = GameSettings.DEFAULT_FASCIST_DECK_SIZE;
+    public static final int NUM_LIBERAL_POLICIES = GameSettings.DEFAULT_LIBERAL_DECK_SIZE;
 
     public static final int MIN_PLAYERS = 5;
     public static final int MAX_PLAYERS = 10;
@@ -63,6 +63,7 @@ public class SecretHitlerGame implements Serializable {
     private int round;
 
     private Random random;
+    private GameSettings settings;
 
     // The last president and chancellor that were successfully voted into office.
     private String lastPresident;
@@ -172,6 +173,10 @@ public class SecretHitlerGame implements Serializable {
      *          chancellor nomination process.
      */
     public SecretHitlerGame(Collection<String> players) {
+        this(players, new GameSettings());
+    }
+
+    public SecretHitlerGame(Collection<String> players, GameSettings settings) {
         if (players.size() < MIN_PLAYERS) {
             throw new IllegalArgumentException("There must be at least " + MIN_PLAYERS + " to start the game (only "
                     + players.size() + " provided).");
@@ -179,6 +184,8 @@ public class SecretHitlerGame implements Serializable {
             throw new IllegalArgumentException(
                     "There can be a max of " + MAX_PLAYERS + " in a game (" + players.size() + " provided).");
         }
+
+        this.settings = settings;
 
         // Set up the list of players.
         playerList = new ArrayList<>();
@@ -196,11 +203,14 @@ public class SecretHitlerGame implements Serializable {
 
         // Assign a new board based on the number of players.
         if (playerList.size() <= 6) {
-            board = new FiveToSixPlayerBoard();
+            board = new FiveToSixPlayerBoard(settings.getFascistVictoryThreshold(),
+                    settings.getLiberalVictoryThreshold(), settings.getHitlerChancellorThreshold());
         } else if (playerList.size() <= 8) {
-            board = new SevenToEightPlayerBoard();
+            board = new SevenToEightPlayerBoard(settings.getFascistVictoryThreshold(),
+                    settings.getLiberalVictoryThreshold(), settings.getHitlerChancellorThreshold());
         } else {
-            board = new NineToTenPlayerBoard();
+            board = new NineToTenPlayerBoard(settings.getFascistVictoryThreshold(),
+                    settings.getLiberalVictoryThreshold(), settings.getHitlerChancellorThreshold());
         }
 
         currentPresident = playerList.get(0).getUsername();
@@ -279,10 +289,10 @@ public class SecretHitlerGame implements Serializable {
         draw = new Deck();
         discard = new Deck();
 
-        for (int i = 0; i < NUM_FASCIST_POLICIES; i++) {
+        for (int i = 0; i < settings.getFascistDeckSize(); i++) {
             draw.add(new Policy(Policy.Type.FASCIST));
         }
-        for (int i = 0; i < NUM_LIBERAL_POLICIES; i++) {
+        for (int i = 0; i < settings.getLiberalDeckSize(); i++) {
             draw.add(new Policy(Policy.Type.LIBERAL));
         }
 

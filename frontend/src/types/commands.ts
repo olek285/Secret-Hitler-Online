@@ -11,6 +11,7 @@ export const enum WSCommandType {
   SELECT_ICON = "select-icon",
   // Host-only lobby setting
   SET_HIDE_COUNTS = "set-hide-counts",
+  SET_GAME_SETTINGS = "set-game-settings",
   // Select a player
   NOMINATE_CHANCELLOR = "nominate-chancellor",
   REGISTER_EXECUTION = "register-execution",
@@ -34,6 +35,14 @@ export type ServerRequestPayload =
   | { command: WSCommandType.END_TERM }
   | { command: WSCommandType.SELECT_ICON; icon: string }
   | { command: WSCommandType.SET_HIDE_COUNTS; hideCounts: boolean }
+  | {
+      command: WSCommandType.SET_GAME_SETTINGS;
+      fascistDeckSize: number;
+      liberalDeckSize: number;
+      fascistVictoryThreshold: number;
+      liberalVictoryThreshold: number;
+      hitlerChancellorThreshold: number;
+    }
   | { command: WSCommandType.NOMINATE_CHANCELLOR; target: string }
   | { command: WSCommandType.REGISTER_EXECUTION; target: string }
   | { command: WSCommandType.REGISTER_SPECIAL_ELECTION; target: string }

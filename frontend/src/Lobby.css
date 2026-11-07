@@ -90,3 +90,23 @@
     font-weight: 500;
     opacity: 0.8;
 }
+.lobby-game-settings {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+  max-width: 22rem;
+}
+
+.lobby-game-settings strong {
+  font-size: 0.85rem;
+}
+
+.lobby-game-settings label {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.lobby-game-settings input {
+  width: 4rem;
+}

@@ -4,6 +4,14 @@ import game.datastructures.Policy;
 
 public class SevenToEightPlayerBoard extends Board{
 
+    public SevenToEightPlayerBoard() {
+        super();
+    }
+
+    public SevenToEightPlayerBoard(int fascistPoliciesToWin, int liberalPoliciesToWin,
+            int minPoliciesForChancellorVictory) {
+        super(fascistPoliciesToWin, liberalPoliciesToWin, minPoliciesForChancellorVictory);
+    }
     @Override
     public PresidentialPower getActivatedPower() {
         if (getLastEnactedType() == Policy.Type.FASCIST) {

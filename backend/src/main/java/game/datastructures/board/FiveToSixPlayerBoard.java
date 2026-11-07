@@ -7,6 +7,14 @@ import game.datastructures.Policy;
  */
 public class FiveToSixPlayerBoard extends Board {
 
+    public FiveToSixPlayerBoard() {
+        super();
+    }
+
+    public FiveToSixPlayerBoard(int fascistPoliciesToWin, int liberalPoliciesToWin,
+            int minPoliciesForChancellorVictory) {
+        super(fascistPoliciesToWin, liberalPoliciesToWin, minPoliciesForChancellorVictory);
+    }
 
     @Override
     public PresidentialPower getActivatedPower() {

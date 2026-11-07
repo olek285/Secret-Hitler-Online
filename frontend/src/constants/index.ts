@@ -74,6 +74,7 @@ export const COMMAND_REGISTER_SPECIAL_ELECTION = "register-special-election";
 export const COMMAND_GET_INVESTIGATION = "get-investigation";
 export const COMMAND_REGISTER_PEEK = "register-peek";
 export const COMMAND_END_TERM = "end-term";
+export const COMMAND_SET_GAME_SETTINGS = "set-game-settings";
 
 //</editor-fold>
 
@@ -101,6 +102,12 @@ export const PARAM_USER_COUNT = "user-count";
 export const PARAM_USERNAMES = "usernames";
 // Lobby setting (host only): hide the pile and policies-left counts in the game.
 export const PARAM_HIDE_COUNTS = "hideCounts";
+export const PARAM_GAME_SETTINGS = "gameSettings";
+export const PARAM_FASCIST_DECK_SIZE = "fascistDeckSize";
+export const PARAM_LIBERAL_DECK_SIZE = "liberalDeckSize";
+export const PARAM_FASCIST_VICTORY_THRESHOLD = "fascistVictoryThreshold";
+export const PARAM_LIBERAL_VICTORY_THRESHOLD = "liberalVictoryThreshold";
+export const PARAM_HITLER_CHANCELLOR_THRESHOLD = "hitlerChancellorThreshold";
 
 // Peek
 export const PARAM_PEEK = "peek";

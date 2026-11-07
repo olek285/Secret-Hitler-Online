@@ -58,3 +58,25 @@
     cursor: not-allowed;
 }
 
+#icon-container {
+  contain: content;
+}
+
+.custom-photo-upload {
+  display: inline-block;
+  margin: 0.5rem;
+  cursor: pointer;
+}
+
+.custom-photo-upload input {
+  display: none;
+}
+
+.custom-photo-preview {
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  margin: 0 auto 0.5rem;
+}

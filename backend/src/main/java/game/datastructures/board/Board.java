@@ -6,12 +6,9 @@ import java.io.Serializable;
 
 public abstract class Board implements Serializable {
 
-    final int FASCIST_POLICIES_TO_WIN = 6;
-    final int LIBERAL_POLICIES_TO_WIN = 5;
-
-    // The minimum number of fascist policies required before
-    // fascists can win by electing Hitler chancellor
-    final int MIN_POLICIES_FOR_CHANCELLOR_VICTORY = 3;
+    private final int fascistPoliciesToWin;
+    private final int liberalPoliciesToWin;
+    private final int minPoliciesForChancellorVictory;
 
     private int numFascistPolicies;
     private int numLiberalPolicies;
@@ -24,6 +21,14 @@ public abstract class Board implements Serializable {
      * @effects this is a new, empty board.
      */
     public Board() {
+        this(6, 5, 3);
+    }
+
+    public Board(int fascistPoliciesToWin, int liberalPoliciesToWin,
+            int minPoliciesForChancellorVictory) {
+        this.fascistPoliciesToWin = fascistPoliciesToWin;
+        this.liberalPoliciesToWin = liberalPoliciesToWin;
+        this.minPoliciesForChancellorVictory = minPoliciesForChancellorVictory;
         numFascistPolicies = 0;
         numLiberalPolicies = 0;
     }
@@ -85,7 +90,7 @@ public abstract class Board implements Serializable {
      * @return true if the number of Liberal Policies {@literal >=} {@code LIBERAL_POLICIES_TO_WIN}
      */
     public boolean isLiberalVictory() {
-        return getNumLiberalPolicies() >= LIBERAL_POLICIES_TO_WIN;
+        return getNumLiberalPolicies() >= liberalPoliciesToWin;
     }
 
 
@@ -94,7 +99,7 @@ public abstract class Board implements Serializable {
      * @return true if the number of Fascist Policies {@literal >=} {@code FASCIST_POLICIES_TO_WIN}
      */
     public boolean isFascistVictory() {
-        return getNumFascistPolicies() >= FASCIST_POLICIES_TO_WIN;
+        return getNumFascistPolicies() >= fascistPoliciesToWin;
     }
 
 
@@ -118,7 +123,7 @@ public abstract class Board implements Serializable {
     }
 
     public boolean fascistsCanWinByElection() {
-        return (getNumFascistPolicies() >= MIN_POLICIES_FOR_CHANCELLOR_VICTORY);
+        return (getNumFascistPolicies() >= minPoliciesForChancellorVictory);
     }
 
 }

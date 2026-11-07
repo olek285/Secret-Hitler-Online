@@ -50,6 +50,7 @@ import {
   PARAM_INVESTIGATION,
   HOUSE_LOBBY,
   PARAM_CLIENT,
+  PARAM_GAME_SETTINGS,
 } from "./constants";
 
 import PlayerDisplay, {
@@ -194,6 +195,13 @@ type AppState = {
   icons: { [key: string]: string };
   /* Host's lobby setting: hide the pile and policies-left counts. */
   hideCounts: boolean;
+  gameSettings: {
+    fascistDeckSize: number;
+    liberalDeckSize: number;
+    fascistVictoryThreshold: number;
+    liberalVictoryThreshold: number;
+    hitlerChancellorThreshold: number;
+  };
   gameState: GameState;
   /* Stores the last gameState[PARAM_STATE] value to check for changes. */
   lastState: any;
@@ -226,6 +234,13 @@ const defaultAppState: AppState = {
   usernames: [],
   icons: {},
   hideCounts: false,
+  gameSettings: {
+    fascistDeckSize: 11,
+    liberalDeckSize: 6,
+    fascistVictoryThreshold: 6,
+    liberalVictoryThreshold: 5,
+    hitlerChancellorThreshold: 3,
+  },
   gameState: DEFAULT_GAME_STATE,
   lastState: {},
   liberalPolicies: 0,
@@ -555,6 +570,7 @@ class App extends Component<{}, AppState> {
         this.setState({
           usernames: message[PARAM_USERNAMES],
           hideCounts: !!message[PARAM_HIDE_COUNTS],
+          gameSettings: message[PARAM_GAME_SETTINGS] || defaultAppState.gameSettings,
           icons: message[PARAM_ICON],
           page: PAGE.LOBBY,
         });
@@ -572,6 +588,7 @@ class App extends Component<{}, AppState> {
           gameState: message,
           page: PAGE.GAME,
           hideCounts: !!message[PARAM_HIDE_COUNTS],
+          gameSettings: message[PARAM_GAME_SETTINGS] || defaultAppState.gameSettings,
         });
         break;
 
@@ -882,6 +899,55 @@ class App extends Component<{}, AppState> {
                 )}
               </span>
             </label>
+            {isVIP && (
+              <div className="lobby-game-settings">
+                <strong>USTAWIENIA GRY</strong>
+                <small>{lobby.customRules}</small>
+                {([
+                  ["fascistDeckSize", "Karty faszystowskie"],
+                  ["liberalDeckSize", "Karty liberalne"],
+                  ["fascistVictoryThreshold", "Faszyści wygrywają"],
+                  ["liberalVictoryThreshold", "Liberałowie wygrywają"],
+                  ["hitlerChancellorThreshold", "Hitler jako kanclerz od"],
+                ] as const).map(([field, label]) => (
+                  <label key={field}>
+                    {label}
+                    <input
+                      type="number"
+                      min={field === "hitlerChancellorThreshold" ? 0 : 1}
+                      max={30}
+                      value={this.state.gameSettings[field]}
+                      onChange={(event) => {
+                        const value = Number(event.target.value);
+                        this.setState((state) => ({
+                          gameSettings: { ...state.gameSettings, [field]: value },
+                        }));
+                      }}
+                      onBlur={() => {
+                        const settings = this.state.gameSettings;
+                        if (
+                          settings.fascistDeckSize >= 6 &&
+                          settings.fascistDeckSize <= 30 &&
+                          settings.liberalDeckSize >= 5 &&
+                          settings.liberalDeckSize <= 20 &&
+                          settings.fascistVictoryThreshold >= 1 &&
+                          settings.fascistVictoryThreshold <= settings.fascistDeckSize &&
+                          settings.liberalVictoryThreshold >= 1 &&
+                          settings.liberalVictoryThreshold <= settings.liberalDeckSize &&
+                          settings.hitlerChancellorThreshold >= 0 &&
+                          settings.hitlerChancellorThreshold < settings.fascistVictoryThreshold
+                        ) {
+                          this.sendWSCommand({
+                            command: WSCommandType.SET_GAME_SETTINGS,
+                            ...settings,
+                          });
+                        }
+                      }}
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
             <div className="lobby-actions">
               <button
                 onClick={this.onClickStartGame}

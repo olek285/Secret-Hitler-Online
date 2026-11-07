@@ -4,6 +4,14 @@ import game.datastructures.Policy;
 
 public class NineToTenPlayerBoard extends Board{
 
+    public NineToTenPlayerBoard() {
+        super();
+    }
+
+    public NineToTenPlayerBoard(int fascistPoliciesToWin, int liberalPoliciesToWin,
+            int minPoliciesForChancellorVictory) {
+        super(fascistPoliciesToWin, liberalPoliciesToWin, minPoliciesForChancellorVictory);
+    }
     @Override
     public PresidentialPower getActivatedPower() {
         if (getLastEnactedType() == Policy.Type.FASCIST) {

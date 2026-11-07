@@ -86,6 +86,41 @@ class IconSelection extends Component<IconSelectionProps, IconSelectionState> {
     }
   }
 
+  onPhotoSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/") || file.size > 8 * 1024 * 1024) {
+        window.alert("Wybierz zdjęcie do 8 MB.");
+        return;
+      }
+      const image = new Image();
+      image.onload = () => {
+        const maxSide = 256;
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        if (!context) {
+          window.alert("Nie udało się przygotować zdjęcia.");
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL("image/jpeg", 0.72);
+        if (compressed.length > 120000) {
+          window.alert("Zdjęcie jest nadal za duże. Wybierz inne.");
+          return;
+        }
+        this.props.sendWSCommand({
+          command: WSCommandType.SELECT_ICON,
+          icon: compressed,
+        });
+        URL.revokeObjectURL(image.src);
+      };
+      image.onerror = () => window.alert("Nie udało się odczytać zdjęcia.");
+      image.src = URL.createObjectURL(file);
+  };
+
   getIconButtonHML(portraitNames: string[]): React.JSX.Element {
     // Update selections based on game state given by the server (this prevents duplicate player icons).
 
@@ -137,6 +172,17 @@ class IconSelection extends Component<IconSelectionProps, IconSelectionState> {
           return (
             <>
               <p>{prompts.lookHelp}</p>
+              <label className="custom-photo-upload">
+                WŁASNE ZDJĘCIE
+                <input type="file" accept="image/*" onChange={this.onPhotoSelected} />
+              </label>
+              {this.props.playerToIcon[this.props.user]?.startsWith("data:") && (
+                <img
+                  className="custom-photo-preview"
+                  src={this.props.playerToIcon[this.props.user]}
+                  alt="Wybrane zdjęcie"
+                />
+              )}
               {this.getIconButtonHML(allPortraits)}
             </>
           );

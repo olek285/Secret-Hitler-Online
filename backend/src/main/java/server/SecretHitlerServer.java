@@ -14,6 +14,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import server.util.Lobby;
+import game.GameSettings;
 
 import java.io.*;
 import java.net.URI;
@@ -42,6 +43,12 @@ public class SecretHitlerServer {
     public static final String PARAM_ICON = "icon";
     public static final String PARAM_CLIENT = "client"; // random per-browser id, used to reclaim a seat on reconnect.
     public static final String PARAM_HIDE_COUNTS = "hideCounts"; // lobby setting: hide pile and policies-left counts.
+    public static final String PARAM_GAME_SETTINGS = "gameSettings";
+    public static final String PARAM_FASCIST_DECK_SIZE = "fascistDeckSize";
+    public static final String PARAM_LIBERAL_DECK_SIZE = "liberalDeckSize";
+    public static final String PARAM_FASCIST_VICTORY_THRESHOLD = "fascistVictoryThreshold";
+    public static final String PARAM_LIBERAL_VICTORY_THRESHOLD = "liberalVictoryThreshold";
+    public static final String PARAM_HITLER_CHANCELLOR_THRESHOLD = "hitlerChancellorThreshold";
 
     // Passed to client
     // The type of the packet tells the client how to parse the contents.
@@ -63,6 +70,7 @@ public class SecretHitlerServer {
     public static final String COMMAND_SET_LOBBY_SIZE = "set-lobby-size";
     public static final String COMMAND_SELECT_ICON = "select-icon";
     public static final String COMMAND_SET_HIDE_COUNTS = "set-hide-counts";
+    public static final String COMMAND_SET_GAME_SETTINGS = "set-game-settings";
     public static final String COMMAND_NOMINATE_CHANCELLOR = "nominate-chancellor";
     public static final String COMMAND_REGISTER_VOTE = "register-vote";
     public static final String COMMAND_REGISTER_PRESIDENT_CHOICE = "register-president-choice";
@@ -779,6 +787,15 @@ public class SecretHitlerServer {
 
                     case COMMAND_SET_HIDE_COUNTS: // params: PARAM_HIDE_COUNTS (boolean)
                         lobby.setHideCounts(name, message.getBoolean(PARAM_HIDE_COUNTS));
+                        break;
+
+                    case COMMAND_SET_GAME_SETTINGS:
+                        lobby.setGameSettings(name, new GameSettings(
+                                message.getInt(PARAM_FASCIST_DECK_SIZE),
+                                message.getInt(PARAM_LIBERAL_DECK_SIZE),
+                                message.getInt(PARAM_FASCIST_VICTORY_THRESHOLD),
+                                message.getInt(PARAM_LIBERAL_VICTORY_THRESHOLD),
+                                message.getInt(PARAM_HITLER_CHANCELLOR_THRESHOLD)));
                         break;
 
                     default: // This is an invalid command.

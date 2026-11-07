@@ -2,6 +2,7 @@ package server.util;
 
 import game.CpuPlayer;
 import game.GameState;
+import game.GameSettings;
 import game.SecretHitlerGame;
 import io.javalin.websocket.WsContext;
 import org.json.JSONObject;
@@ -26,7 +27,7 @@ import java.util.stream.Collectors;
  * A user is defined as an active websocket connection.
  */
 public class Lobby implements Serializable {
-    private static final int MAX_CUSTOM_ICON_LENGTH = 700000;
+    private static final int MAX_CUSTOM_ICON_LENGTH = 120000;
 
     private SecretHitlerGame game;
 
@@ -42,6 +43,7 @@ public class Lobby implements Serializable {
 
     /* Used to reassign users to previously chosen images if they disconnect */
     final private ConcurrentHashMap<String, String> usernameToPreferredIcon;
+    transient private ConcurrentHashMap<String, String> customIconDataById;
 
     /*
      * Random per-browser id supplied by the client. Lets the same device reclaim
@@ -55,6 +57,7 @@ public class Lobby implements Serializable {
      * policies-left numbers during the game. Kept between games.
      */
     private boolean hideCounts = false;
+    private GameSettings gameSettings = new GameSettings();
 
     public static long LOBBY_TIMEOUT_DURATION_IN_MIN = 10;
     public static float PLAYER_TIMEOUT_IN_SEC = 3;
@@ -78,6 +81,7 @@ public class Lobby implements Serializable {
         usersInGame = new ConcurrentSkipListSet<>();
         usernameToIcon = new ConcurrentHashMap<>();
         usernameToPreferredIcon = new ConcurrentHashMap<>();
+        customIconDataById = new ConcurrentHashMap<>();
         usernameToClientId = new ConcurrentHashMap<>();
         cpuPlayers = new ConcurrentSkipListSet<>();
         resetTimeout();
@@ -399,6 +403,7 @@ public class Lobby implements Serializable {
         if (game != null && game.hasGameFinished()) {
             game = null;
             cpuPlayers.clear();
+            clearCustomIcons();
         }
 
         // Update all the CpuPlayers so they can act
@@ -476,9 +481,17 @@ public class Lobby implements Serializable {
             message.put("usernames", activeUsernames.toArray());
         }
         // Add user icons to the update message
-        JSONObject icons = new JSONObject(usernameToIcon);
+        JSONObject icons = new JSONObject();
+        for (Entry<String, String> entry : usernameToIcon.entrySet()) {
+            String icon = entry.getValue();
+            if (icon != null && icon.startsWith("custom:")) {
+                icon = customIconDataById.getOrDefault(icon, DEFAULT_ICON);
+            }
+            icons.put(entry.getKey(), icon);
+        }
         message.put("icon", icons);
         message.put(SecretHitlerServer.PARAM_HIDE_COUNTS, hideCounts);
+        message.put(SecretHitlerServer.PARAM_GAME_SETTINGS, gameSettingsJSON());
 
         ctx.send(message.toString());
     }
@@ -497,6 +510,13 @@ public class Lobby implements Serializable {
         in.defaultReadObject();
         userToUsername = new ConcurrentHashMap<>();
         activeUsernames = new ConcurrentLinkedQueue<>();
+        customIconDataById = new ConcurrentHashMap<>();
+        for (Entry<String, String> entry : usernameToIcon.entrySet()) {
+            if (entry.getValue().startsWith("custom:")) {
+                usernameToIcon.put(entry.getKey(), DEFAULT_ICON);
+                usernameToPreferredIcon.remove(entry.getKey());
+            }
+        }
         userTimeoutTimer = new Timer();
         cpuTickTimer = new Timer();
     }
@@ -525,6 +545,11 @@ public class Lobby implements Serializable {
         }
 
         String username = userToUsername.get(user);
+        if (iconID.startsWith("data:")) {
+            String customId = "custom:" + UUID.randomUUID();
+            customIconDataById.put(customId, iconID);
+            iconID = customId;
+        }
         // Verify that no user has the same icon
         if (!iconID.equals(DEFAULT_ICON)) { // all icons other than the default cannot be shared.
             for (String name : userToUsername.values()) {
@@ -550,6 +575,35 @@ public class Lobby implements Serializable {
         if (!isInGame() && name.equals(activeUsernames.peek())) {
             hideCounts = hide;
         }
+    }
+
+    synchronized public void setGameSettings(String name, GameSettings settings) {
+        if (!isInGame() && name.equals(activeUsernames.peek())) {
+            gameSettings = settings;
+        }
+    }
+
+    private void clearCustomIcons() {
+        for (Entry<String, String> entry : usernameToIcon.entrySet()) {
+            if (entry.getValue().startsWith("custom:")) {
+                usernameToIcon.put(entry.getKey(), DEFAULT_ICON);
+                usernameToPreferredIcon.remove(entry.getKey());
+            }
+        }
+        customIconDataById.clear();
+    }
+
+    private JSONObject gameSettingsJSON() {
+        JSONObject out = new JSONObject();
+        out.put(SecretHitlerServer.PARAM_FASCIST_DECK_SIZE, gameSettings.getFascistDeckSize());
+        out.put(SecretHitlerServer.PARAM_LIBERAL_DECK_SIZE, gameSettings.getLiberalDeckSize());
+        out.put(SecretHitlerServer.PARAM_FASCIST_VICTORY_THRESHOLD,
+                gameSettings.getFascistVictoryThreshold());
+        out.put(SecretHitlerServer.PARAM_LIBERAL_VICTORY_THRESHOLD,
+                gameSettings.getLiberalVictoryThreshold());
+        out.put(SecretHitlerServer.PARAM_HITLER_CHANCELLOR_THRESHOLD,
+                gameSettings.getHitlerChancellorThreshold());
+        return out;
     }
 
     // </editor-fold>
@@ -620,7 +674,7 @@ public class Lobby implements Serializable {
         playerNames.addAll(cpuNames);
         Collections.shuffle(playerNames);
 
-        game = new SecretHitlerGame(playerNames);
+        game = new SecretHitlerGame(playerNames, gameSettings);
 
         // Initialize all of the CpuPlayers
         for (CpuPlayer cpu : cpuPlayers) {
