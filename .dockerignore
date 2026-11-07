@@ -1,0 +1,7 @@
+.git
+**/node_modules
+frontend/build
+backend/build
+backend/.gradle
+backend/target
+**/.DS_Store

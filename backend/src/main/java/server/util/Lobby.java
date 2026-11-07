@@ -43,6 +43,19 @@ public class Lobby implements Serializable {
     /* Used to reassign users to previously chosen images if they disconnect */
     final private ConcurrentHashMap<String, String> usernameToPreferredIcon;
 
+    /*
+     * Random per-browser id supplied by the client. Lets the same device reclaim
+     * its name when its old websocket is still half-open (common when a phone
+     * locks or drops Wi-Fi), without letting a different device steal the name.
+     */
+    final private ConcurrentHashMap<String, String> usernameToClientId;
+
+    /*
+     * Host's lobby setting: hide the draw/discard pile counts and the
+     * policies-left numbers during the game. Kept between games.
+     */
+    private boolean hideCounts = false;
+
     public static long LOBBY_TIMEOUT_DURATION_IN_MIN = 10;
     public static float PLAYER_TIMEOUT_IN_SEC = 3;
     public static float CPU_ACTION_DELAY_IN_SEC = 4;
@@ -65,6 +78,7 @@ public class Lobby implements Serializable {
         usersInGame = new ConcurrentSkipListSet<>();
         usernameToIcon = new ConcurrentHashMap<>();
         usernameToPreferredIcon = new ConcurrentHashMap<>();
+        usernameToClientId = new ConcurrentHashMap<>();
         cpuPlayers = new ConcurrentSkipListSet<>();
         resetTimeout();
     }
@@ -168,6 +182,73 @@ public class Lobby implements Serializable {
      */
     synchronized public boolean isFull() {
         return activeUsernames.size() >= SecretHitlerGame.MAX_PLAYERS;
+    }
+
+    /**
+     * Records which client (browser) owns a username.
+     */
+    synchronized public void setClientId(String name, String clientId) {
+        if (clientId != null && !clientId.isBlank()) {
+            usernameToClientId.put(name, clientId);
+        }
+    }
+
+    /**
+     * @return true iff {@code clientId} is non-blank and is the client that
+     *         previously joined with {@code name}.
+     */
+    synchronized public boolean isSameClient(String name, String clientId) {
+        return clientId != null && !clientId.isBlank() && clientId.equals(usernameToClientId.get(name));
+    }
+
+    /**
+     * Returns whether the client may (re)claim the seat for {@code name},
+     * replacing any connection that still holds that name.
+     */
+    synchronized public boolean canReconnect(String name, String clientId) {
+        if (!isSameClient(name, clientId)) {
+            return false;
+        }
+        if (isInGame()) {
+            return usersInGame.contains(name);
+        }
+        return activeUsernames.contains(name) || !isFull();
+    }
+
+    /**
+     * Detaches every connection currently holding {@code name}, without
+     * scheduling the user's removal, and returns them so the caller can close
+     * them.
+     */
+    synchronized public List<WsContext> detachConnections(String name) {
+        List<WsContext> detached = new ArrayList<>();
+        for (Entry<WsContext, String> entry : userToUsername.entrySet()) {
+            if (entry.getValue().equals(name)) {
+                detached.add(entry.getKey());
+            }
+        }
+        for (WsContext ctx : detached) {
+            userToUsername.remove(ctx);
+        }
+        return detached;
+    }
+
+    /**
+     * Attaches a new connection for a user who is reclaiming their seat
+     * (see {@link #canReconnect}).
+     */
+    synchronized public void reconnectUser(WsContext context, String name) {
+        userToUsername.put(context, name);
+        if (!activeUsernames.contains(name)) {
+            activeUsernames.add(name);
+        }
+        String currentIcon = usernameToIcon.get(name);
+        if (currentIcon == null || currentIcon.equals(DEFAULT_ICON)) {
+            usernameToIcon.put(name, DEFAULT_ICON);
+            if (usernameToPreferredIcon.containsKey(name)) {
+                trySetUserIcon(usernameToPreferredIcon.get(name), context);
+            }
+        }
     }
 
     /**
@@ -397,6 +478,7 @@ public class Lobby implements Serializable {
         // Add user icons to the update message
         JSONObject icons = new JSONObject(usernameToIcon);
         message.put("icon", icons);
+        message.put(SecretHitlerServer.PARAM_HIDE_COUNTS, hideCounts);
 
         ctx.send(message.toString());
     }
@@ -456,6 +538,20 @@ public class Lobby implements Serializable {
         usernameToPreferredIcon.put(username, iconID);
     }
 
+    /**
+     * Sets the hide-counts lobby setting.
+     *
+     * @param name the user asking for the change.
+     * @param hide whether the counts should be hidden.
+     * @effects Changes the setting only if {@code name} is the host (the first
+     *          user in the lobby) and no game is running; otherwise does nothing.
+     */
+    synchronized public void setHideCounts(String name, boolean hide) {
+        if (!isInGame() && name.equals(activeUsernames.peek())) {
+            hideCounts = hide;
+        }
+    }
+
     // </editor-fold>
 
     ////// Game Management
@@ -504,8 +600,9 @@ public class Lobby implements Serializable {
         // Generate CpuPlayers if the lobby size has not been met
         List<String> cpuNames = new ArrayList<>();
         cpuPlayers.clear();
-        if (usersInGame.size() < SecretHitlerGame.MIN_PLAYERS) {
-            int numCpuPlayersToGenerate = SecretHitlerGame.MIN_PLAYERS - usersInGame.size();
+        int botFillTarget = botFillTarget();
+        if (usersInGame.size() < botFillTarget) {
+            int numCpuPlayersToGenerate = botFillTarget - usersInGame.size();
             int i = 1;
             while (numCpuPlayersToGenerate > 0) {
                 String botName = "Bot " + i;
@@ -529,6 +626,24 @@ public class Lobby implements Serializable {
         for (CpuPlayer cpu : cpuPlayers) {
             cpu.initialize(game);
         }
+    }
+
+    /**
+     * How many seats bots fill up to. Normally just the 5-player minimum. The
+     * env var FILL_BOTS_TO (5 to 10) raises it, so the 7-10 player boards and
+     * layouts can be tried with only a few phones. Off by default.
+     */
+    private static int botFillTarget() {
+        int target = SecretHitlerGame.MIN_PLAYERS;
+        String value = System.getenv("FILL_BOTS_TO");
+        if (value != null && !value.isBlank()) {
+            try {
+                target = Integer.parseInt(value.trim());
+            } catch (NumberFormatException e) {
+                System.out.println("Ignoring FILL_BOTS_TO=" + value + ": not a number.");
+            }
+        }
+        return Math.max(SecretHitlerGame.MIN_PLAYERS, Math.min(SecretHitlerGame.MAX_PLAYERS, target));
     }
 
     /**

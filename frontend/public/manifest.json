@@ -1,6 +1,6 @@
 {
   "short_name": "Secret Hitler",
-  "name": "Secret Hitler Online",
+  "name": "Secret Hitler (wieczór gier)",
   "icons": [
     {
       "src": "favicon.ico",
@@ -19,7 +19,9 @@
     }
   ],
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "portrait",
+  "theme_color": "#e05b2b",
+  "background_color": "#4d4945"
 }

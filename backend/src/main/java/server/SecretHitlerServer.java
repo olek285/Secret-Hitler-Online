@@ -3,6 +3,7 @@ package server;
 import game.datastructures.Identity;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.http.staticfiles.Location;
 import io.javalin.websocket.WsCloseContext;
 import io.javalin.websocket.WsConnectContext;
 import io.javalin.websocket.WsContext;
@@ -39,6 +40,8 @@ public class SecretHitlerServer {
     public static final String PARAM_VETO = "veto";
     public static final String PARAM_CHOICE = "choice"; // the index of the chosen policy.
     public static final String PARAM_ICON = "icon";
+    public static final String PARAM_CLIENT = "client"; // random per-browser id, used to reclaim a seat on reconnect.
+    public static final String PARAM_HIDE_COUNTS = "hideCounts"; // lobby setting: hide pile and policies-left counts.
 
     // Passed to client
     // The type of the packet tells the client how to parse the contents.
@@ -59,6 +62,7 @@ public class SecretHitlerServer {
     public static final String COMMAND_GET_STATE = "get-state";
     public static final String COMMAND_SET_LOBBY_SIZE = "set-lobby-size";
     public static final String COMMAND_SELECT_ICON = "select-icon";
+    public static final String COMMAND_SET_HIDE_COUNTS = "set-hide-counts";
     public static final String COMMAND_NOMINATE_CHANCELLOR = "nominate-chancellor";
     public static final String COMMAND_REGISTER_VOTE = "register-vote";
     public static final String COMMAND_REGISTER_PRESIDENT_CHOICE = "register-president-choice";
@@ -77,6 +81,14 @@ public class SecretHitlerServer {
     private static final int CODE_LENGTH = 4;
 
     private static final float UPDATE_FREQUENCY_SECONDS = 60;
+
+    /*
+     * The permanent lobby used for private/LAN hosting. It is created on startup,
+     * recreated on demand, and never times out, so everyone who opens the site
+     * lands in the same room. Must match HOUSE_LOBBY in the frontend constants.
+     */
+    public static final String HOUSE_LOBBY_CODE = Optional.ofNullable(System.getenv("HOUSE_LOBBY"))
+            .filter(s -> !s.isBlank()).orElse("HOME");
     // </editor-fold>
 
     ///// Private Fields
@@ -113,16 +125,58 @@ public class SecretHitlerServer {
         return DEFAULT_PORT_NUMBER;
     }
 
+    /**
+     * Returns the lobby with the given code, or null if none exists. The house
+     * lobby is (re)created on demand.
+     */
+    private static Lobby getLobby(String code) {
+        if (code == null) {
+            return null;
+        }
+        if (code.equals(HOUSE_LOBBY_CODE)) {
+            return codeToLobby.computeIfAbsent(code, c -> new Lobby());
+        }
+        return codeToLobby.get(code);
+    }
+
+    /**
+     * GET /join-url: the address other devices should use to reach this server
+     * (from the PUBLIC_URL env var). Empty if unknown, in which case the client
+     * falls back to its own origin.
+     */
+    public static void joinUrl(Context ctx) {
+        String url = System.getenv("PUBLIC_URL");
+        ctx.status(200);
+        ctx.result(url == null ? "" : url);
+    }
+
     public static void main(String[] args) {
         // On load, check the connected database to see if there's a stored state from
         // the server.
         loadDatabaseBackup();
         removeInactiveLobbies(); // immediately clean in case of redundant lobbies.
+        getLobby(HOUSE_LOBBY_CODE);
+
+        // When STATIC_DIR is set, also serve the built frontend from it, so the
+        // whole game is reachable from a single address.
+        String staticDir = System.getenv("STATIC_DIR");
 
         // Only initialize Javalin communication after the database has been queried.
         Javalin serverApp = Javalin.create(config -> {
+            if (staticDir != null && !staticDir.isBlank()) {
+                config.staticFiles.add(staticFiles -> {
+                    staticFiles.hostedPath = "/";
+                    staticFiles.directory = staticDir;
+                    staticFiles.location = Location.EXTERNAL;
+                });
+                config.spaRoot.addFile("/", staticDir + "/index.html", Location.EXTERNAL);
+            }
+            boolean selfHosted = staticDir != null && !staticDir.isBlank();
             config.plugins.enableCors(cors -> {
-                if (ApplicationConfig.DEBUG) {
+                // Self-hosted: the page comes from this server under whatever LAN
+                // address the host has. The upstream allow-list would reject
+                // its CORS-mode requests (fonts), so accept any origin.
+                if (ApplicationConfig.DEBUG || selfHosted) {
                     cors.add(it -> {
                         it.anyHost();
                     });
@@ -137,6 +191,7 @@ public class SecretHitlerServer {
         serverApp.get("/check-login", SecretHitlerServer::checkLogin); // Checks if a login is valid.
         serverApp.get("/new-lobby", SecretHitlerServer::createNewLobby); // Creates and returns the code for a new lobby
         serverApp.get("/ping", SecretHitlerServer::ping);
+        serverApp.get("/join-url", SecretHitlerServer::joinUrl);
 
         serverApp.ws("/game", wsHandler -> {
             wsHandler.onConnect(SecretHitlerServer::onWebsocketConnect);
@@ -190,6 +245,11 @@ public class SecretHitlerServer {
         while (itr.hasNext()) {
             Map.Entry<String, Lobby> entry = itr.next();
             Lobby lobby = entry.getValue();
+            // The house lobby must survive long breaks where every phone is locked
+            // (no pings arrive), otherwise the running game would be destroyed.
+            if (entry.getKey().equals(HOUSE_LOBBY_CODE)) {
+                continue;
+            }
             if (lobby.hasTimedOut()) {
                 // Remove the websocket connections.
                 for (WsContext ctx : lobby.getConnections()) {
@@ -407,13 +467,15 @@ public class SecretHitlerServer {
             return;
         }
 
-        if (!codeToLobby.containsKey(lobbyCode)) { // lobby does not exist
+        Lobby lobby = getLobby(lobbyCode);
+        if (lobby == null) { // lobby does not exist
             ctx.status(404);
             ctx.result("No such lobby found.");
         } else { // the lobby exists
-            Lobby lobby = codeToLobby.get(lobbyCode);
-
-            if (lobby.isFull()) {
+            if (lobby.canReconnect(name, ctx.queryParam(PARAM_CLIENT))) {
+                ctx.status(200);
+                ctx.result("Login request valid (same device re-joining).");
+            } else if (lobby.isFull()) {
                 ctx.status(489);
                 ctx.result("The lobby is currently full.");
             } else if (lobby.isInGame()) {
@@ -514,36 +576,56 @@ public class SecretHitlerServer {
         String code = ctx.queryParam(PARAM_LOBBY);
         String name = ctx.queryParam(PARAM_NAME);
 
+        String clientId = ctx.queryParam(PARAM_CLIENT);
+
         if (code == null || name == null || name.isEmpty() || name.isBlank()) {
             logger.debug("FAILED (Lobby or name is empty/null)");
             ctx.session.close(StatusCode.PROTOCOL, "Lobby and name must be specified.");
+            return;
         }
 
         logger.debug("Attempting to connect user '" + name + "' to lobby '" + code + "': ");
-        if (!codeToLobby.containsKey(code)) { // the lobby does not exist.
+        Lobby lobby = getLobby(code);
+        if (lobby == null) { // the lobby does not exist.
             logger.debug("FAILED (The lobby does not exist)");
             ctx.session.close(StatusCode.PROTOCOL, "The lobby '" + code + "' does not exist.");
             return;
         }
 
-        Lobby lobby = codeToLobby.get(code);
-        if (lobby.hasUserWithName(name)) { // duplicate names not allowed
-            logger.debug("FAILED (Repeat username)");
-            ctx.session.close(StatusCode.PROTOCOL, "A user with the name " + name + " is already in the lobby.");
-            return;
-        } else if (lobby.isFull()) {
-            logger.debug("FAILED (Lobby is full)");
-            ctx.session.close(StatusCode.PROTOCOL, "The lobby " + code + " is currently full.");
-            return;
-        } else if (lobby.isInGame() && !lobby.canAddUserDuringGame(name)) {
-            logger.debug("FAILED (Lobby in game)");
-            ctx.session.close(StatusCode.PROTOCOL, "The lobby " + code + " is currently in a game..");
-            return;
+        synchronized (lobby) {
+            if (lobby.canReconnect(name, clientId)) {
+                // Same device coming back: drop whatever stale socket still holds
+                // the name and hand the seat to the new connection.
+                for (WsContext stale : lobby.detachConnections(name)) {
+                    userToLobby.remove(stale);
+                    try {
+                        stale.session.close(StatusCode.NORMAL, "Replaced by a newer connection.");
+                    } catch (Exception e) {
+                        logger.debug("Failed to close stale websocket for '" + name + "'.", e);
+                    }
+                }
+                lobby.reconnectUser(ctx, name);
+                logger.debug("SUCCESS (reconnected)");
+            } else if (lobby.hasUserWithName(name)) { // duplicate names not allowed
+                logger.debug("FAILED (Repeat username)");
+                ctx.session.close(StatusCode.PROTOCOL, "A user with the name " + name + " is already in the lobby.");
+                return;
+            } else if (lobby.isFull()) {
+                logger.debug("FAILED (Lobby is full)");
+                ctx.session.close(StatusCode.PROTOCOL, "The lobby " + code + " is currently full.");
+                return;
+            } else if (lobby.isInGame() && !lobby.canAddUserDuringGame(name)) {
+                logger.debug("FAILED (Lobby in game)");
+                ctx.session.close(StatusCode.PROTOCOL, "The lobby " + code + " is currently in a game..");
+                return;
+            } else {
+                logger.debug("SUCCESS");
+                lobby.addUser(ctx, name);
+            }
+            lobby.setClientId(name, clientId);
+            userToLobby.put(ctx, lobby); // keep track of which lobby this connection is in.
+            lobby.updateAllUsers();
         }
-        logger.debug("SUCCESS");
-        lobby.addUser(ctx, name);
-        userToLobby.put(ctx, lobby); // keep track of which lobby this connection is in.
-        lobby.updateAllUsers();
         hasLobbyChanged = true;
     }
 
@@ -693,6 +775,10 @@ public class SecretHitlerServer {
                     case COMMAND_SELECT_ICON:
                         String iconId = message.getString(PARAM_ICON);
                         lobby.trySetUserIcon(iconId, ctx);
+                        break;
+
+                    case COMMAND_SET_HIDE_COUNTS: // params: PARAM_HIDE_COUNTS (boolean)
+                        lobby.setHideCounts(name, message.getBoolean(PARAM_HIDE_COUNTS));
                         break;
 
                     default: // This is an invalid command.

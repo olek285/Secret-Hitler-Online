@@ -1,8 +1,10 @@
 import React, { Component } from "react";
+import { prompts } from "../strings";
 import "../selectable.css";
 import "./IconSelection.css";
 import portraits, {
   unlockedPortraits,
+  lockedPortraits,
   defaultPortrait,
 } from "../assets";
 import { portraitsAltText } from "../assets";
@@ -19,7 +21,7 @@ type IconSelectionProps = {
 };
 
 type IconSelectionState = {
-  customIcon?: string;
+  unlockLockedIcons: boolean;
 };
 
 class IconSelection extends Component<IconSelectionProps, IconSelectionState> {
@@ -28,7 +30,11 @@ class IconSelection extends Component<IconSelectionProps, IconSelectionState> {
   constructor(props: IconSelectionProps) {
     super(props);
 
-    this.state = {};
+    // Private build: every portrait is available (upstream gated half of them
+    // behind sharing a tweet).
+    this.state = {
+      unlockLockedIcons: true,
+    };
 
     this.onConfirmButtonClick = this.onConfirmButtonClick.bind(this);
     this.getIconButtonHML = this.getIconButtonHML.bind(this);
@@ -52,8 +58,10 @@ class IconSelection extends Component<IconSelectionProps, IconSelectionState> {
 
   onClickIcon(iconID: string) {
     // Verify that player is able to select this icon.
+    let isPremium = lockedPortraits.indexOf(iconID) !== -1;
     // Also does not allow selection if user has already selected this icon
-    let unselectable = this.isIconInUse(iconID);
+    let unselectable =
+      (isPremium && !this.state.unlockLockedIcons) || this.isIconInUse(iconID);
 
     if (!unselectable) {
       // This is a valid choice according to our current game state
@@ -66,49 +74,6 @@ class IconSelection extends Component<IconSelectionProps, IconSelectionState> {
     }
   }
 
-  onSelectPhoto = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files && event.target.files[0];
-    if (!file || !file.type.startsWith("image/")) {
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const source = new Image();
-      source.onload = () => {
-        const cropSize = Math.min(source.width, source.height);
-        const cropX = (source.width - cropSize) / 2;
-        const cropY = (source.height - cropSize) / 2;
-        const maxDimension = 512;
-        const scale = Math.min(1, maxDimension / cropSize);
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(cropSize * scale));
-        canvas.height = canvas.width;
-        const context = canvas.getContext("2d");
-        if (!context) {
-          return;
-        }
-        context.drawImage(
-          source,
-          cropX,
-          cropY,
-          cropSize,
-          cropSize,
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
-        const compressed = canvas.toDataURL("image/jpeg", 0.75);
-        if (compressed.length <= 700000) {
-          this.setState({ customIcon: compressed });
-        }
-      };
-      source.src = String(reader.result);
-    };
-    reader.readAsDataURL(file);
-  }
-
   /**
    * Called when any icon is clicked.
    * @effects Attempts to send the server a command with the player's vote, and locks access to the button
@@ -117,9 +82,6 @@ class IconSelection extends Component<IconSelectionProps, IconSelectionState> {
   onConfirmButtonClick() {
     // Check that user has a profile picture assigned according to the game state
     if (this.props.playerToIcon[this.props.user] !== defaultPortrait) {
-      this.props.onConfirm();
-    } else if (this.state.customIcon) {
-      this.onClickIcon(this.state.customIcon);
       this.props.onConfirm();
     }
   }
@@ -138,7 +100,10 @@ class IconSelection extends Component<IconSelectionProps, IconSelectionState> {
         // Disable locked icons or icons currently selected by other players.
         let isIconAvailable =
           !this.isIconInUse(portraitID) || portraitID === currPortrait;
-        let isEnabled = isIconAvailable;
+        let isIconUnlocked =
+          lockedPortraits.indexOf(portraitID) === -1 ||
+          this.state.unlockLockedIcons;
+        let isEnabled = isIconUnlocked && isIconAvailable;
         let isSelected = currPortrait === portraitID;
         // TODO: Convert this to a button since a clickable div is not accessible.
         return (
@@ -164,36 +129,20 @@ class IconSelection extends Component<IconSelectionProps, IconSelectionState> {
   }
 
   render() {
+    const allPortraits = unlockedPortraits.concat(lockedPortraits);
     return (
       <ButtonPrompt
-        label={"WYGLĄD GRACZA"}
+        label={prompts.lookLabel}
         renderHeader={() => {
           return (
             <>
-              <p>Wybierz wygląd, a następnie naciśnij przycisk potwierdzenia.</p>
-              {this.getIconButtonHML(unlockedPortraits)}
-              <label className="photo-upload">
-                DODAJ WŁASNE ZDJĘCIE
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={this.onSelectPhoto}
-                />
-              </label>
-              {this.state.customIcon && (
-                <img
-                  id="icon"
-                  className="selectable selected"
-                  src={this.state.customIcon}
-                  alt="Podgląd własnego zdjęcia."
-                />
-              )}
+              <p>{prompts.lookHelp}</p>
+              {this.getIconButtonHML(allPortraits)}
             </>
           );
         }}
         buttonDisabled={
-          this.props.playerToIcon[this.props.user] === defaultPortrait &&
-          !this.state.customIcon
+          this.props.playerToIcon[this.props.user] === defaultPortrait
         }
         buttonOnClick={this.onConfirmButtonClick}
       ></ButtonPrompt>

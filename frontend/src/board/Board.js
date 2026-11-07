@@ -1,12 +1,14 @@
 import React, {Component} from 'react';
-import LiberalBoard from "../assets/board-liberal.png";
+import LiberalBoard from "../assets/pl/board-liberal.png";
 import ElectionTracker from "../assets/board-tracker.png";
-import PolicyLiberal from "../assets/board-policy-liberal.png";
-import FascistBoard_5_6 from "../assets/board-fascist-5-6.png";
-import FascistBoard_7_8 from "../assets/board-fascist-7-8.png";
-import FascistBoard_9_10 from "../assets/board-fascist-9-10.png";
-import PolicyFascist from "../assets/board-policy-fascist.png";
+import PolicyLiberal from "../assets/pl/board-policy-liberal.png";
+import FascistBoard_5_6 from "../assets/pl/board-fascist-5-6.png";
+import FascistBoard_7_8 from "../assets/pl/board-fascist-7-8.png";
+import FascistBoard_9_10 from "../assets/pl/board-fascist-9-10.png";
+import PolicyFascist from "../assets/pl/board-policy-fascist.png";
 
+import { getFascistPowerHint } from "../utils";
+import { alt } from "../strings";
 import "./Board.css";
 
 class Board extends Component {
@@ -67,30 +69,34 @@ class Board extends Component {
 
     render() {
         return (
-            <div id="board-container" style={{display:"flex", flexDirection:"column"}}>
-                <div id="board-group" style ={{margin:"4px 10px", position:"relative"}}>
+            <div id="board-container">
+                <div id="board-group">
                     <img id="board"
                          src={LiberalBoard}
-                         alt={this.props.numLiberalPolicies + " liberalnych ustaw uchwalono."}
+                         alt={alt.liberalBoard(this.props.numLiberalPolicies)}
                     />
                     <img id="election-tracker"
                          src={ElectionTracker}
                          style={{position:"absolute",
                                  top:"74%", left:"calc(34.2% + " + this.props.electionTracker+"*9.16%)",
                                  width:"3.2%"}}
-                         alt={"Licznik wyborów jest na pozycji " + this.props.electionTracker + " z 3."}
+                         alt={alt.trackerPosition(this.props.electionTracker)}
                     />
                     {this.placeRepeating(this.props.numLiberalPolicies, 5, PolicyLiberal, "policy", "18.2%", "13.54%")}
                 </div>
 
-                <div id="board-group" style={{margin:"4px 10px", position:"relative"}}>
+                <div id="board-group">
                     <img
                       id="board"
                       src={this.getFascistBoard()}
-                      alt={this.props.numFascistPolicies + " faszystowskich ustaw uchwalono."}
+                      alt={alt.fascistBoard(this.props.numFascistPolicies)}
                     />
                     {this.placeRepeating(this.props.numFascistPolicies, 6, PolicyFascist, "policy", "11%", "13.6%")}
                 </div>
+
+                <p id="fascist-power-hint">
+                    {getFascistPowerHint(this.props.numPlayers, this.props.numFascistPolicies)}
+                </p>
             </div>
         );
     }

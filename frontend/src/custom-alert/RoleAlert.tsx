@@ -1,17 +1,18 @@
 import React, { Component } from "react";
-import RoleHitler from "../assets/role-hitler.png";
-import RoleLiberal1 from "../assets/role-liberal-1.png";
-import RoleLiberal2 from "../assets/role-liberal-2.png";
-import RoleLiberal3 from "../assets/role-liberal-3.png";
-import RoleLiberal4 from "../assets/role-liberal-4.png";
-import RoleLiberal5 from "../assets/role-liberal-5.png";
-import RoleLiberal6 from "../assets/role-liberal-6.png";
-import RoleFascist1 from "../assets/role-fascist-1.png";
-import RoleFascist2 from "../assets/role-fascist-2.png";
-import RoleFascist3 from "../assets/role-fascist-3.png";
+import RoleHitler from "../assets/pl/role-hitler.png";
+import RoleLiberal1 from "../assets/pl/role-liberal-1.png";
+import RoleLiberal2 from "../assets/pl/role-liberal-2.png";
+import RoleLiberal3 from "../assets/pl/role-liberal-3.png";
+import RoleLiberal4 from "../assets/pl/role-liberal-4.png";
+import RoleLiberal5 from "../assets/pl/role-liberal-5.png";
+import RoleLiberal6 from "../assets/pl/role-liberal-6.png";
+import RoleFascist1 from "../assets/pl/role-fascist-1.png";
+import RoleFascist2 from "../assets/pl/role-fascist-2.png";
+import RoleFascist3 from "../assets/pl/role-fascist-3.png";
 
 import "./RoleAlert.css";
 import { GameState, Role } from "../types";
+import { alt, common, prompts } from "../strings";
 
 const LiberalImages = [
   RoleLiberal1,
@@ -21,40 +22,15 @@ const LiberalImages = [
   RoleLiberal5,
   RoleLiberal6,
 ];
-const LiberalImagesAltText = [
-  "Your secret role is LIBERAL. The card shows a bespectacled man with a pipe giving a side-eye.",
-  "Your secret role is LIBERAL. The card shows an elegant woman with curly hair and pearls.",
-  "Your secret role is LIBERAL. The card shows a round-chinned man in a pilgrim-esque hat gazing quizzically at the camera.",
-  "Your secret role is LIBERAL. The card shows a sharp-suited man sporting a fedora and a neatly-trimmed mustache.",
-  "Your secret role is LIBERAL. The card shows an elderly woman with comically large glasses holding a chihuahua.",
-  "Your secret role is LIBERAL. The card shows a woman with a large sun hat and shoulder-length bob smirking.",
-];
+const LiberalImagesAltText = alt.liberalRoleCards;
 const HitlerImages = [RoleHitler];
-const HitlerImagesAltText = [
-  "Your secret role is HITLER. The card shows a crocodile in a suit and WW2 German military hat glaring at the camera.",
-];
+const HitlerImagesAltText = alt.hitlerRoleCards;
 const FascistImages = [RoleFascist1, RoleFascist2, RoleFascist3];
-const FascistImagesAltText = [
-  "Your secret role is FASCIST. The card shows a snake emerging from a suit covered in military medals.",
-  "Your secret role is FASCIST. The card shows an iguana in a German military hat and suit with fangs bared.",
-  "Your secret role is FASCIST. The card shows an iguana in a German military hat and suit with fangs bared.",
-];
+const FascistImagesAltText = alt.fascistRoleCards;
 
-const LiberalText = [
-  "Wygrywacie, jeśli plansza zapełni się liberalnymi ustawami albo Hitler zostanie stracony.",
-  "Przegrywacie, jeśli plansza zapełni się faszystowskimi ustawami albo Hitler zostanie wybrany kanclerzem po uchwaleniu 3 faszystowskich ustaw.",
-  "Miejcie oczy szeroko otwarte i wypatrujcie podejrzanych działań. Wytropcie Hitlera — każdy może kłamać!",
-];
-const FascistText = [
-  "Wygrywacie, jeśli po wyłożeniu 3 faszystowskich ustaw Hitler zostanie wybrany kanclerzem albo plansza zapełni się faszystowskimi ustawami.",
-  "Przegrywacie, jeśli plansza zapełni się liberalnymi ustawami albo Hitler zostanie stracony.",
-  "Odwracajcie podejrzenia od Hitlera i szukajcie sposobów na wprowadzenie chaosu do gry.",
-];
-const HitlerText = [
-  "Wygrywasz, jeśli po wyłożeniu 3 faszystowskich ustaw zostaniesz wybrany kanclerzem albo plansza zapełni się faszystowskimi ustawami.",
-  "Przegrywasz, jeśli plansza zapełni się liberalnymi ustawami albo zostaniesz stracony.",
-  "Spróbuj zdobyć zaufanie i polegaj na innych faszystach, aby stwarzali ci okazje.",
-];
+const LiberalText = prompts.liberalText;
+const FascistText = prompts.fascistText;
+const HitlerText = prompts.hitlerText;
 
 type RoleAlertProps = {
   role?: Role;
@@ -115,7 +91,7 @@ class RoleAlert extends Component<RoleAlertProps> {
       <div>
         <div>
           <h2 id="alert-header" className={"left-align"}>
-            TWOJA ROLA: {this.props.role === Role.LIBERAL ? "LIBERAŁ" : this.props.role === Role.FASCIST ? "FASZYSTA" : "HITLER"}
+            {prompts.yourRole(this.props.role)}
           </h2>
           <img id="role" src={image} alt={alt} />
 
@@ -124,7 +100,7 @@ class RoleAlert extends Component<RoleAlertProps> {
           <p className="highlight left-align">{roleText[2]}</p>
         </div>
 
-        <button onClick={this.props.onClick}>OK</button>
+        <button onClick={this.props.onClick}>{common.ok}</button>
       </div>
     );
   }

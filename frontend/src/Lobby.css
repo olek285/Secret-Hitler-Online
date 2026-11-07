@@ -28,30 +28,6 @@
 }
 
 #lobby-player-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-#lobby-player-container > * {
-    max-width: 22vw;
-}
-
-.lobby-share {
-    display: flex;
-    justify-content: center;
-    margin: 12px 0;
-}
-
-.lobby-link-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.lobby-link-row textarea {
-    flex: 1;
-    width: auto;
 }
 
 #lobby-player-placeholder {
@@ -79,49 +55,38 @@
     text-align: center;
 }
 
-#lobby-text-container {
-    display: inline-block;
-    margin-top: 10px;
-    max-width: 700px;
+/* Host-only lobby setting (hide card counts). Styled like the <p> text above
+   it; ".App" beats the phone rule that makes every input full width. */
+.lobby-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 10px 0 0;
+    font-family: var(--textFont);
+    font-weight: 700;
+    font-size: calc(12px + 1vmin);
+    color: var(--textColorOnDark);
+    cursor: pointer;
 }
 
-#lobby-warning-text {
-    margin: 10px 0;
-    font-weight: 300;
-    text-align: center;
+.App .lobby-option input {
+    flex: none;
+    width: 22px;
+    min-width: 0;
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--buttonFill);
+    cursor: inherit;
 }
 
-@media (max-width: 600px) {
-    #lobby-player-text-choose-container {
-        align-items: center;
-        width: 100%;
-    }
-
-    #lobby-change-icon-button {
-        margin: 8px 0 8px auto;
-        padding: 10px 12px;
-        font-size: 1rem;
-    }
-
-    .lobby-link-row {
-        flex-direction: column;
-    }
-
-    .lobby-link-row textarea {
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .lobby-link-row button {
-        margin: 8px;
-    }
-
-    #lobby-player-container > * {
-        max-width: 30vw;
-    }
+.lobby-option input:disabled,
+.lobby-option input:disabled + span {
+    cursor: default;
 }
 
-#lobby-about-text {
-    margin: 10px 10px;
-    font-weight: 300;
+.lobby-option-note {
+    font-weight: 500;
+    opacity: 0.8;
 }

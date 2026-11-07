@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import { common } from "../strings";
 import PlayerDisplay, {DISABLE_EXECUTED_PLAYERS} from "../player/PlayerDisplay";
 import ButtonPrompt from "./ButtonPrompt";
 import PropTypes from "prop-types";
@@ -50,7 +51,7 @@ PlayerDisplayPrompt.defaultProps = {
     user: "",
     includeUser: false,
     disabledFilter: DISABLE_EXECUTED_PLAYERS,
-    buttonText: "POTWIERDŹ",
+    buttonText: common.confirm,
     buttonOnClick: (selectedItem) => {
         console.log("Button clicked with " + selectedItem + " selected.");
     }

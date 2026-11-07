@@ -1,7 +1,7 @@
 import React, { Component } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import "./App.css";
 import "./Lobby.css";
+import "./fonts.css";
 import MaxLengthTextField from "./util/MaxLengthTextField";
 import CustomAlert from "./custom-alert/CustomAlert";
 import RoleAlert from "./custom-alert/RoleAlert";
@@ -12,12 +12,11 @@ import {
   PAGE,
   MAX_FAILED_CONNECTIONS,
   SERVER_ADDRESS_HTTP,
-  NEW_LOBBY,
   CHECK_LOGIN,
   SERVER_ADDRESS,
   WEBSOCKET,
   PARAM_USERNAMES,
-  LOBBY_CODE_LENGTH,
+  PARAM_HIDE_COUNTS,
   PARAM_STATE,
   STATE_CHANCELLOR_NOMINATION,
   STATE_CHANCELLOR_VOTING,
@@ -49,6 +48,8 @@ import {
   SERVER_PING,
   PARAM_ICON,
   PARAM_INVESTIGATION,
+  HOUSE_LOBBY,
+  PARAM_CLIENT,
 } from "./constants";
 
 import PlayerDisplay, {
@@ -75,12 +76,15 @@ import InvestigationAlert from "./custom-alert/InvestigationAlert";
 import Deck from "./board/Deck";
 import PlayerPolicyStatus from "./util/PlayerPolicyStatus";
 
-import VictoryFascistHeader from "./assets/victory-fascist-header.png";
-import VictoryLiberalHeader from "./assets/victory-liberal-header.png";
+import VictoryFascistHeader from "./assets/pl/victory-fascist-header.png";
+import VictoryLiberalHeader from "./assets/pl/victory-liberal-header.png";
 import IconSelection from "./custom-alert/IconSelection";
 import { defaultPortrait } from "./assets";
 import Player from "./player/Player";
 import Cookies from "js-cookie";
+import JoinQRCode from "./util/JoinQRCode";
+import { installKeepAwake } from "./util/keepAwake";
+import { installViewportHeight } from "./util/viewportHeight";
 import {
   GameState,
   LobbyState,
@@ -89,6 +93,9 @@ import {
   WSCommand,
   WSCommandType,
 } from "./types";
+// Imported last so phone overrides win over component styles.
+import "./mobile.css";
+import { common, game, login, lobby, prompts, alt } from "./strings";
 
 const EVENT_BAR_FADE_OUT_DURATION = 500;
 const CUSTOM_ALERT_FADE_DURATION = 1000;
@@ -121,6 +128,49 @@ const DEFAULT_GAME_STATE: GameState = {
 const COOKIE_NAME = "name";
 const COOKIE_LOBBY = "lobby";
 
+const CLIENT_ID_KEY = "sh-client-id";
+// Set while the player is (or should be) in the house lobby, so a page that the
+// phone's browser reloaded in the background rejoins automatically.
+const AUTO_REJOIN_KEY = "sh-auto-rejoin";
+// After the page has been hidden this long, assume the socket may be dead.
+const STALE_AFTER_HIDDEN_MS = 4000;
+
+/** A random id that identifies this browser, so it can reclaim its seat. */
+function getClientId(): string {
+  try {
+    let id = localStorage.getItem(CLIENT_ID_KEY);
+    if (!id) {
+      id =
+        Math.random().toString(36).slice(2) +
+        Math.random().toString(36).slice(2);
+      localStorage.setItem(CLIENT_ID_KEY, id);
+    }
+    return id;
+  } catch (e) {
+    return "";
+  }
+}
+
+function storageGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    return null;
+  }
+}
+
+function storageSet(key: string, value: string | null) {
+  try {
+    if (value === null) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, value);
+    }
+  } catch (e) {
+    // Private mode etc.; auto-rejoin just won't work.
+  }
+}
+
 if (DEBUG) {
   console.warn("Running in debug mode.");
 }
@@ -142,6 +192,8 @@ type AppState = {
   lobbyFromURL: boolean;
   usernames: string[];
   icons: { [key: string]: string };
+  /* Host's lobby setting: hide the pile and policies-left counts. */
+  hideCounts: boolean;
   gameState: GameState;
   /* Stores the last gameState[PARAM_STATE] value to check for changes. */
   lastState: any;
@@ -173,6 +225,7 @@ const defaultAppState: AppState = {
   lobbyFromURL: false,
   usernames: [],
   icons: {},
+  hideCounts: false,
   gameState: DEFAULT_GAME_STATE,
   lastState: {},
   liberalPolicies: 0,
@@ -186,7 +239,7 @@ const defaultAppState: AppState = {
   alertContent: <div />,
   showEventBar: false,
   eventBarMessage: "",
-  statusBarText: "---",
+  statusBarText: game.statusInitial,
   allAnimationsFinished: true,
 };
 
@@ -200,18 +253,20 @@ class App extends Component<{}, AppState> {
   okMessageListeners: (() => void)[] = [];
   allAnimationsFinished: boolean = true;
   gameOver: boolean = false;
+  clientId: string = getClientId();
+  reconnectTimer?: ReturnType<typeof setTimeout> = undefined;
+  hiddenSince?: number = undefined;
 
   // noinspection DuplicatedCode
   constructor(props: any) {
     super(props);
 
     let name = Cookies.get(COOKIE_NAME) ? Cookies.get(COOKIE_NAME) : "";
-    let lobby = Cookies.get(COOKIE_LOBBY) ? Cookies.get(COOKIE_LOBBY) : "";
 
     this.state = {
       ...defaultAppState,
       joinName: name || "",
-      joinLobby: lobby || "",
+      joinLobby: HOUSE_LOBBY,
       createLobbyName: name || "",
     };
 
@@ -219,7 +274,6 @@ class App extends Component<{}, AppState> {
     this.onWebSocketClose = this.onWebSocketClose.bind(this);
     this.tryOpenWebSocket = this.tryOpenWebSocket.bind(this);
     this.onClickLeaveLobby = this.onClickLeaveLobby.bind(this);
-    this.onClickCopy = this.onClickCopy.bind(this);
     this.onClickStartGame = this.onClickStartGame.bind(this);
     this.sendWSCommand = this.sendWSCommand.bind(this);
     this.showSnackBar = this.showSnackBar.bind(this);
@@ -233,21 +287,90 @@ class App extends Component<{}, AppState> {
     this.updateChangeIconAlert = this.updateChangeIconAlert.bind(this);
     this.onClickChangeIcon = this.onClickChangeIcon.bind(this);
 
+    this.onVisibilityChange = this.onVisibilityChange.bind(this);
+    this.onBrowserOnline = this.onBrowserOnline.bind(this);
+
     // Ping the server to wake it up if it's not currently being used
     // This reduces the delay users experience when starting lobbies
-    fetch(SERVER_ADDRESS_HTTP + SERVER_PING);
+    fetch(SERVER_ADDRESS_HTTP + SERVER_PING).catch(() => {});
+  }
+
+  componentDidMount() {
+    installKeepAwake();
+    installViewportHeight();
+    document.addEventListener("visibilitychange", this.onVisibilityChange);
+    window.addEventListener("online", this.onBrowserOnline);
+
+    // If the browser threw this page away while the phone was locked, put the
+    // player straight back into the game.
+    const rejoinName = storageGet(AUTO_REJOIN_KEY);
+    if (rejoinName) {
+      this.setState({ joinName: rejoinName }, () => this.onClickJoin());
+    }
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener("visibilitychange", this.onVisibilityChange);
+    window.removeEventListener("online", this.onBrowserOnline);
+  }
+
+  /** True while the player should be connected to a lobby. */
+  isInSession() {
+    return this.state.page !== PAGE.LOGIN && this.reconnectOnConnectionClosed;
+  }
+
+  /**
+   * Phones freeze background pages and often kill their sockets silently. When
+   * the page comes back after a while, open a fresh connection; the server hands
+   * the seat over to it because this browser's client id matches.
+   */
+  onVisibilityChange() {
+    if (document.visibilityState === "hidden") {
+      this.hiddenSince = Date.now();
+      return;
+    }
+    const hiddenFor =
+      this.hiddenSince === undefined ? 0 : Date.now() - this.hiddenSince;
+    this.hiddenSince = undefined;
+    const socketDown =
+      !this.websocket || this.websocket.readyState !== WebSocket.OPEN;
+    if (
+      this.isInSession() &&
+      (socketDown || hiddenFor > STALE_AFTER_HIDDEN_MS)
+    ) {
+      this.reconnectNow();
+    }
+  }
+
+  onBrowserOnline() {
+    if (this.isInSession()) {
+      this.reconnectNow();
+    }
+  }
+
+  reconnectNow() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+    this.failedConnections = 0;
+    this.tryOpenWebSocket(this.state.name, this.state.lobby);
+  }
+
+  scheduleReconnect() {
+    if (this.reconnectTimer) {
+      return;
+    }
+    // 0.5s, 1s, 2s, 4s, then every 8s.
+    const delay = Math.min(500 * Math.pow(2, this.failedConnections), 8000);
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = undefined;
+      this.tryOpenWebSocket(this.state.name, this.state.lobby);
+    }, delay);
   }
 
   /////////// Server Communication
   // <editor-fold desc="Server Communication">
-
-  /**
-   * Attempts to request the server to create a new lobby and returns the response.
-   * @return {Promise<Response>}
-   */
-  async tryCreateLobby() {
-    return fetch(SERVER_ADDRESS_HTTP + NEW_LOBBY);
-  }
 
   /**
    * Checks if the login is valid.
@@ -260,9 +383,13 @@ class App extends Component<{}, AppState> {
       SERVER_ADDRESS_HTTP +
         CHECK_LOGIN +
         "?name=" +
-        encodeURI(name) +
+        encodeURIComponent(name) +
         "&lobby=" +
-        encodeURI(lobby)
+        encodeURIComponent(lobby) +
+        "&" +
+        PARAM_CLIENT +
+        "=" +
+        encodeURIComponent(this.clientId)
     );
   }
 
@@ -286,7 +413,11 @@ class App extends Component<{}, AppState> {
       "?name=" +
       encodeURIComponent(name) +
       "&lobby=" +
-      encodeURIComponent(lobby);
+      encodeURIComponent(lobby) +
+      "&" +
+      PARAM_CLIENT +
+      "=" +
+      encodeURIComponent(this.clientId);
     if (DEBUG) {
       console.trace("TryOpenWebsocket URL: " + url);
     }
@@ -321,7 +452,12 @@ class App extends Component<{}, AppState> {
         createLobbyError: "",
       });
       ws.onmessage = (msg) => this.onWebSocketMessage(msg);
-      ws.onclose = () => this.onWebSocketClose();
+      ws.onclose = (event) => {
+        // Ignore late close events from sockets we've already replaced.
+        if (this.websocket === ws) {
+          this.onWebSocketClose(event);
+        }
+      };
 
       // Ping the web server at a set interval.
       if (this.pingInterval) {
@@ -344,10 +480,23 @@ class App extends Component<{}, AppState> {
    *          ({@code MAX_FAILED_CONNECTIONS}), does not reopen the websocket connection and returns the user to the
    *          login screen with a relevant error message.
    */
-  onWebSocketClose() {
+  onWebSocketClose(event?: CloseEvent) {
     // Clear the server ping interval when the socket is closed.
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
+    }
+
+    // The server replaced this socket with a newer one from the same browser
+    // (e.g. the game was opened in a second tab). Don't fight over the seat.
+    if (event && event.reason && event.reason.startsWith("Replaced")) {
+      this.websocket = undefined;
+      this.setState({
+        joinName: this.state.name,
+        joinError: login.openedElsewhere,
+        page: PAGE.LOGIN,
+      });
+      this.clearAnimationQueue();
+      return;
     }
 
     console.log(
@@ -364,18 +513,18 @@ class App extends Component<{}, AppState> {
     ) {
       if (this.failedConnections >= 1) {
         // Only show the error bar if the first attempt has failed.
-        this.showSnackBar("Lost connection to the server: retrying...");
+        this.showSnackBar(login.retrying);
       }
+      this.scheduleReconnect();
       this.failedConnections += 1;
-      this.tryOpenWebSocket(this.state.name, this.state.lobby);
     } else if (this.reconnectOnConnectionClosed) {
       if (DEBUG) {
         console.log("Disconnecting from lobby.");
       }
+      this.failedConnections = 0;
       this.setState({
         joinName: this.state.name,
-        joinLobby: this.state.lobby,
-        joinError: "Disconnected from the lobby.",
+        joinError: login.lostGame,
         page: PAGE.LOGIN,
       });
       this.clearAnimationQueue();
@@ -387,7 +536,6 @@ class App extends Component<{}, AppState> {
         this.setState({
           page: PAGE.LOGIN,
           joinName: this.state.name,
-          joinLobby: this.state.lobby,
           joinError: "",
         });
         this.clearAnimationQueue();
@@ -406,6 +554,7 @@ class App extends Component<{}, AppState> {
       case PACKET_LOBBY:
         this.setState({
           usernames: message[PARAM_USERNAMES],
+          hideCounts: !!message[PARAM_HIDE_COUNTS],
           icons: message[PARAM_ICON],
           page: PAGE.LOBBY,
         });
@@ -419,7 +568,11 @@ class App extends Component<{}, AppState> {
         if (message !== this.state.gameState) {
           this.onGameStateChanged(message);
         }
-        this.setState({ gameState: message, page: PAGE.GAME });
+        this.setState({
+          gameState: message,
+          page: PAGE.GAME,
+          hideCounts: !!message[PARAM_HIDE_COUNTS],
+        });
         break;
 
       case PACKET_OK: // Traverse all listeners and call the functions.
@@ -477,9 +630,7 @@ class App extends Component<{}, AppState> {
     if (this.websocket !== undefined) {
       this.websocket.send(JSON.stringify(data));
     } else {
-      this.showSnackBar(
-        "Could not connect to the server. Try refreshing the page if this happens again."
-      );
+      this.showSnackBar(login.sendFailed);
     }
   }
 
@@ -489,7 +640,7 @@ class App extends Component<{}, AppState> {
   // <editor-fold desc="Login Page">
 
   /**
-   * Updates the "Name" field under Join Game.
+   * Updates the "Name" field.
    * @param text the text to update the text field to.
    */
   updateJoinName = (text: string) => {
@@ -498,183 +649,85 @@ class App extends Component<{}, AppState> {
     });
   };
 
-  /**
-   * Updates the Lobby field under Join Game.
-   * @param text the text to update the text field to.
-   */
-  updateJoinLobby = (text: string) => {
-    this.setState({
-      joinLobby: text,
-    });
-  };
-
-  /**
-   * Updates the Name field under Create Lobby.
-   * @param text the text to update the text field to.
-   */
-  updateCreateLobbyName = (text: string) => {
-    this.setState({
-      createLobbyName: text,
-    });
-  };
-
   shouldJoinButtonBeEnabled() {
-    return (
-      this.state.joinLobby.length === LOBBY_CODE_LENGTH &&
-      this.state.joinName.length !== 0
-    );
-  }
-
-  shouldCreateLobbyButtonBeEnabled() {
-    return this.state.createLobbyName.length !== 0;
+    return this.state.joinName.trim().length !== 0;
   }
 
   /**
-   * Attempts to connect to the lobby via websocket.
+   * Joins the house lobby with the entered name.
    */
   onClickJoin = () => {
-    this.setState({ joinError: "Łączenie..." });
-    this.tryLogin(this.state.joinName, this.state.joinLobby)
+    const name = this.state.joinName.trim();
+    if (name.length === 0) {
+      return;
+    }
+    const lobby = HOUSE_LOBBY;
+    this.setState({ joinName: name, joinError: login.connecting });
+    const fail = (message: string) => {
+      // Don't keep auto-rejoining into a lobby we can't enter.
+      storageSet(AUTO_REJOIN_KEY, null);
+      this.setState({ joinError: message });
+    };
+    this.tryLogin(name, lobby)
       .then((response) => {
         if (!response.ok) {
           if (DEBUG) {
             console.log("Response is not ok");
           }
-          if (response.status === 404) {
-            this.setState({ joinError: "Nie znaleziono poczekalni." });
-          } else if (response.status === 403) {
-            this.setState({
-              joinError:
-                "W poczekalni jest już gracz o nazwie „" +
-                this.state.joinName +
-                "”.",
-            });
+          if (response.status === 403) {
+            fail(login.nameTaken(name));
           } else if (response.status === 488) {
-            this.setState({ joinError: "W poczekalni trwa obecnie gra." });
+            fail(login.gameInProgress);
           } else if (response.status === 489) {
-            this.setState({ joinError: "Poczekalnia jest pełna." });
+            fail(login.gameFull);
           } else {
-            this.setState({
-              joinError:
-                "Wystąpił błąd połączenia z serwerem. Spróbuj ponownie.",
-            });
+            fail(login.unreachable);
           }
+        } else if (!this.tryOpenWebSocket(name, lobby)) {
+          fail(login.unreachable);
         } else {
-          // Username and lobby were verified. Try to open websocket.
-          if (
-            !this.tryOpenWebSocket(this.state.joinName, this.state.joinLobby)
-          ) {
-            this.setState({
-              joinError:
-                "Wystąpił błąd połączenia z serwerem. Spróbuj ponownie.",
-            });
-          } else {
-            // Save the username and lobby login
-            Cookies.set(COOKIE_NAME, this.state.name, { expires: 7 });
-            Cookies.set(COOKIE_LOBBY, this.state.joinLobby);
-          }
+          // Save the username for next time, and remember to auto-rejoin.
+          Cookies.set(COOKIE_NAME, name, { expires: 7 });
+          Cookies.set(COOKIE_LOBBY, lobby);
+          storageSet(AUTO_REJOIN_KEY, name);
         }
       })
       .catch(() => {
         this.setState({
-          joinError:
-            "Wystąpił błąd podczas kontaktu z serwerem. Poczekaj i spróbuj ponownie.",
-        });
-      });
-  };
-
-  /**
-   * Attempts to connect to the server and create a new lobby, and then opens a connection to the lobby.
-   */
-  onClickCreateLobby = () => {
-    this.setState({ createLobbyError: "Łączenie..." });
-    this.tryCreateLobby()
-      .then((response) => {
-        if (response.ok) {
-          response.text().then((lobbyCode) => {
-            if (!this.tryOpenWebSocket(this.state.createLobbyName, lobbyCode)) {
-              // if the connection failed
-              this.setState({
-                createLobbyError:
-                  "Wystąpił błąd połączenia z serwerem. Spróbuj ponownie.",
-              });
-            } else {
-              // Save the username and lobby login
-              Cookies.set(COOKIE_NAME, this.state.name, { expires: 7 });
-              Cookies.set(COOKIE_LOBBY, lobbyCode);
-            }
-          });
-        } else {
-          this.setState({
-            createLobbyError:
-              "Wystąpił błąd połączenia z serwerem. Spróbuj ponownie.",
-          });
-        }
-      })
-      .catch(() => {
-        this.setState({
-          createLobbyError:
-            "Wystąpił błąd połączenia z serwerem. Spróbuj ponownie.",
+          joinError: login.unreachableWifi,
         });
       });
   };
 
   renderLoginPage() {
     return (
-      <div className="App">
-        <br />
-        <div style={{ textAlign: "center" }}>
-          {/** TODO: Add reusable announcement component. 
-                    <div style={{backgroundColor: "#222222", width: "50vmin", margin: "0 auto", padding: "20px"}}>
-                        <p>
-                            Hello! Secret Hitler Online is currently undergoing some maintenance.
-                            Sorry for the interruption and please check back in in a few hours! -Shrimp
-                        </p>
-                        <p style={{fontStyle: "italic", fontSize: "calc(8px + 1vmin)"}}>(DATE TIME PM PT)</p>
-
-                    </div>
-                    */}
-          <h2>DOŁĄCZ DO GRY</h2>
-          <MaxLengthTextField
-            label={"Lobby"}
-            onChange={this.updateJoinLobby}
-            value={this.state.joinLobby}
-            maxLength={LOBBY_CODE_LENGTH}
-            showCharCount={false}
-            forceUpperCase={true}
-          />
-
-          <MaxLengthTextField
-            label={"Twoja nazwa"}
-            onChange={this.updateJoinName}
-            value={this.state.joinName}
-            maxLength={12}
-          />
-          <p id={"errormessage"}>{this.state.joinError}</p>
-          <button
-            onClick={this.onClickJoin}
-            disabled={!this.shouldJoinButtonBeEnabled()}
+      <div className="App page-login">
+        <header className="App-header">{common.title}</header>
+        <div className="login-card">
+          <h2>{login.question}</h2>
+          <form
+            className="login-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (this.shouldJoinButtonBeEnabled()) {
+                this.onClickJoin();
+              }
+            }}
           >
-            DOŁĄCZ
-          </button>
+            <MaxLengthTextField
+              label={login.nameLabel}
+              onChange={this.updateJoinName}
+              value={this.state.joinName}
+              maxLength={12}
+            />
+            <p id={"errormessage"}>{this.state.joinError}</p>
+            <button type="submit" disabled={!this.shouldJoinButtonBeEnabled()}>
+              {login.join}
+            </button>
+          </form>
         </div>
-        <br />
-        <div>
-          <h2>UTWÓRZ POCZEKALNIĘ</h2>
-          <MaxLengthTextField
-            label={"Twoja nazwa"}
-            onChange={this.updateCreateLobbyName}
-            value={this.state.createLobbyName}
-            maxLength={12}
-          />
-          <p id={"errormessage"}>{this.state.createLobbyError}</p>
-          <button
-            onClick={this.onClickCreateLobby}
-            disabled={!this.shouldCreateLobbyButtonBeEnabled()}
-          >
-            UTWÓRZ POCZEKALNIĘ
-          </button>
-        </div>
+        <JoinQRCode caption={login.qrCaption} />
+        <p className="credits">{login.credits}</p>
       </div>
     );
   }
@@ -693,7 +746,7 @@ class App extends Component<{}, AppState> {
       return (
         <Player
           key={i}
-          name={i === 0 ? name : name + " [Host]"}
+          name={name}
           showRole={false}
           icon={this.state.icons[name]}
           isBusy={this.state.icons[name] === defaultPortrait}
@@ -750,19 +803,9 @@ class App extends Component<{}, AppState> {
   }
 
   onClickLeaveLobby() {
-    this.websocket?.close();
+    storageSet(AUTO_REJOIN_KEY, null);
     this.reconnectOnConnectionClosed = false;
-  }
-
-  onClickCopy() {
-    const text = document.getElementById("linkText");
-    if (text === null) {
-      return;
-    }
-    (text as HTMLTextAreaElement).select();
-    (text as HTMLTextAreaElement).setSelectionRange(0, 999999);
-    document.execCommand("copy");
-    this.showSnackBar("Copied!");
+    this.websocket?.close();
   }
 
   showSnackBar(message: string) {
@@ -782,80 +825,80 @@ class App extends Component<{}, AppState> {
   }
 
   renderLobbyPage() {
-    // The first player in the lobby is counted as the VIP.
+    // The first player in the lobby is counted as the host (VIP).
     let isVIP =
       this.state.usernames.length > 0 &&
       this.state.usernames[0] === this.state.name;
+    const host = this.state.usernames.length > 0 ? this.state.usernames[0] : "";
+    const playerCount = this.state.usernames.length;
     return (
-      <div className="App">
+      <div className="App page-lobby">
+        <header className="App-header">{common.title}</header>
+
         <CustomAlert show={this.state.showAlert}>
           {this.state.alertContent}
         </CustomAlert>
 
-        <div
-          style={{ textAlign: "left", marginLeft: "20px", marginRight: "20px" }}
-        >
-          <div style={{ display: "flex", flexDirection: "row" }}>
-            <h2>KOD POCZEKALNI: </h2>
-            <h2
-              style={{ marginLeft: "5px", color: "var(--textColorHighlight)" }}
-            >
-              {this.state.lobby}
-            </h2>
-          </div>
-
-          <p style={{ marginBottom: "2px" }}>
-            Zeskanuj kod QR telefonem albo skopiuj link, aby zaprosić innych graczy.
-          </p>
-          <div className="lobby-share">
-            <QRCodeSVG
-              value={window.location.origin + "/?lobby=" + this.state.lobby}
-              size={180}
-              bgColor="#ffffff"
-              fgColor="#141414"
-              level="M"
-            />
-          </div>
-          <div
-            className="lobby-link-row"
-          >
-            <textarea
-              id="linkText"
-              readOnly={true}
-              value={window.location.origin + "/?lobby=" + this.state.lobby}
-            />
-            <button onClick={this.onClickCopy}>KOPIUJ</button>
-          </div>
-
-          <div id={"lobby-lower-container"}>
-            <div id={"lobby-player-area-container"}>
-              <div id={"lobby-player-text-choose-container"}>
-                <p id={"lobby-player-count-text"}>
-                  Gracze ({this.state.usernames.length}/10)
-                </p>
-                <button
-                  id={"lobby-change-icon-button"}
-                  onClick={this.onClickChangeIcon}
-                >
-                  ZMIEŃ IKONĘ
-                </button>
-              </div>
-              <div id={"lobby-player-container"}>{this.renderPlayerList()}</div>
+        <div id={"lobby-lower-container"}>
+          <div id={"lobby-player-area-container"}>
+            <div id={"lobby-player-text-choose-container"}>
+              <p id={"lobby-player-count-text"}>{lobby.players(playerCount)}</p>
+              <button
+                id={"lobby-change-icon-button"}
+                onClick={this.onClickChangeIcon}
+              >
+                {lobby.changeLook}
+              </button>
             </div>
+            <div id={"lobby-player-container"}>{this.renderPlayerList()}</div>
+          </div>
 
-            <div id={"lobby-button-container"}>
-              {!isVIP && (
-                <p id={"lobby-vip-text"}>Tylko VIP może rozpocząć grę.</p>
-              )}
+          <div id={"lobby-button-container"}>
+            {isVIP ? (
+              <p id={"lobby-vip-text"}>
+                {playerCount < 5
+                  ? lobby.hostFewPlayers
+                  : lobby.hostReady}
+              </p>
+            ) : (
+              <p id={"lobby-vip-text"}>{lobby.waitingForHost(host)}</p>
+            )}
+            <label className="lobby-option">
+              <input
+                type="checkbox"
+                checked={this.state.hideCounts}
+                disabled={!isVIP}
+                onChange={(event) =>
+                  this.sendWSCommand({
+                    command: WSCommandType.SET_HIDE_COUNTS,
+                    hideCounts: event.target.checked,
+                  })
+                }
+              />
+              <span>
+                {lobby.hideCounts}
+                {!isVIP && (
+                  <span className="lobby-option-note"> · {lobby.hostOnly}</span>
+                )}
+              </span>
+            </label>
+            <div className="lobby-actions">
               <button
                 onClick={this.onClickStartGame}
                 disabled={!isVIP || !this.shouldStartGameBeEnabled()}
               >
-                ROZPOCZNIJ GRĘ
+                {lobby.start}
               </button>
-              <button onClick={this.onClickLeaveLobby}>OPUŚĆ POCZEKALNIĘ</button>
+              <button
+                className="button-secondary"
+                onClick={this.onClickLeaveLobby}
+              >
+                {lobby.leave}
+              </button>
             </div>
           </div>
+
+          <JoinQRCode compact caption={lobby.qrCaption} />
         </div>
         <div style={{ textAlign: "center" }}>
           <div id="snackbar">{this.state.snackbarMessage}</div>
@@ -873,10 +916,9 @@ class App extends Component<{}, AppState> {
     if (name === newState.targetUser) {
       this.queueAlert(
         <ButtonPrompt
-          label={"ZOSTAŁEŚ STRACONY"}
-          headerText={
-            "Straceni gracze nie mogą mówić, głosować ani kandydować. Nie ujawniaj swojej roli grupie."
-          }
+          label={prompts.executedYouLabel}
+          headerText={prompts.executedYouHelp}
+          buttonText={common.ok}
           buttonOnClick={this.hideAlertAndFinish}
         />,
         false
@@ -884,13 +926,10 @@ class App extends Component<{}, AppState> {
     } else {
       this.queueAlert(
         <ButtonPrompt
-          label={"WYNIK EGZEKUCJI"}
-          footerText={
-            newState.targetUser +
-            " został stracony. Nie może już mówić, głosować ani kandydować."
-          }
+          label={prompts.executionResultsLabel}
+          footerText={prompts.executedOther(newState.targetUser!)}
           buttonOnClick={this.hideAlertAndFinish}
-          buttonText={"OK"}
+          buttonText={common.ok}
         >
           <PlayerDisplay
             user={name}
@@ -1018,10 +1057,8 @@ class App extends Component<{}, AppState> {
             );
           }
 
-          this.queueEventUpdate("NOMINACJA KANCLERZA");
-          this.queueStatusMessage(
-            "Oczekiwanie na nominację kanclerza przez prezydenta."
-          );
+          this.queueEventUpdate(game.eventNomination);
+          this.queueStatusMessage(game.statusNomination);
 
           if (isPresident) {
             //Show the chancellor nomination window.
@@ -1034,8 +1071,8 @@ class App extends Component<{}, AppState> {
 
         case STATE_CHANCELLOR_VOTING:
           this.setState({ statusBarText: "" });
-          this.queueEventUpdate("GŁOSOWANIE");
-          this.queueStatusMessage("Oczekiwanie na głosy wszystkich graczy.");
+          this.queueEventUpdate(game.eventVoting);
+          this.queueStatusMessage(game.statusVoting);
           // Check if the player is dead or has already voted-- if so, do not show the voting prompt.
           if (
             newState.players[name][PLAYER_IS_ALIVE] &&
@@ -1056,17 +1093,15 @@ class App extends Component<{}, AppState> {
         case STATE_LEGISLATIVE_PRESIDENT:
           // The vote completed, so show the votes.
           this.addAnimationToQueue(() => this.showVotes(newState));
-          this.queueEventUpdate("SESJA LEGISLATYWNA");
+          this.queueEventUpdate(game.eventLegislative);
 
           // TODO: Animate cards being pulled from the draw deck for all users.
 
-          this.queueStatusMessage(
-            "Oczekiwanie, aż prezydent wybierze ustawę do odrzucenia."
-          );
+          this.queueStatusMessage(game.statusPresidentDiscard);
 
           if (isPresident) {
             if (!newState.presidentChoices) {
-              throw new Error("Nie znaleziono wyborów prezydenta.");
+              throw new Error("President choices not found.");
             }
             this.queueAlert(
               <PresidentLegislativePrompt
@@ -1079,12 +1114,10 @@ class App extends Component<{}, AppState> {
           break;
 
         case STATE_LEGISLATIVE_CHANCELLOR:
-          this.queueStatusMessage(
-            "Oczekiwanie, aż kanclerz wybierze ustawę do uchwalenia."
-          );
+          this.queueStatusMessage(game.statusChancellorEnact);
           if (isChancellor) {
             if (!newState.chancellorChoices) {
-              throw new Error("Nie znaleziono wyborów kanclerza.");
+              throw new Error("Chancellor choices not found.");
             }
             this.queueAlert(
               <ChancellorLegislativePrompt
@@ -1104,9 +1137,7 @@ class App extends Component<{}, AppState> {
           break;
 
         case STATE_LEGISLATIVE_PRESIDENT_VETO:
-          this.queueStatusMessage(
-            "Kanclerz zgłosił weto. Oczekiwanie na decyzję prezydenta."
-          );
+          this.queueStatusMessage(game.statusVetoRequested);
           if (isPresident) {
             this.queueAlert(
               <VetoPrompt
@@ -1119,10 +1150,10 @@ class App extends Component<{}, AppState> {
           break;
 
         case STATE_PP_PEEK:
-          this.queueEventUpdate("UPRAWNIENIE PREZYDENTA");
+          this.queueEventUpdate(game.eventPower);
           if (isPresident) {
             if (!newState.peek) {
-              throw new Error("Nie znaleziono ustaw do podglądu.");
+              throw new Error("Peek policies not found.");
             }
             this.queueAlert(
               <PeekPrompt
@@ -1132,49 +1163,41 @@ class App extends Component<{}, AppState> {
               true
             );
           } else {
-            this.queueStatusMessage(
-              "Podgląd: prezydent ogląda 3 następne ustawy."
-            );
+            this.queueStatusMessage(game.statusPeek);
           }
           break;
 
         case STATE_PP_ELECTION:
-          this.queueEventUpdate("UPRAWNIENIE PREZYDENTA");
+          this.queueEventUpdate(game.eventPower);
           if (isPresident) {
             this.queueAlert(
               SelectSpecialElectionPrompt(name, newState, this.sendWSCommand)
             );
           } else {
-            this.queueStatusMessage(
-              "Wybory specjalne: prezydent wybiera następnego prezydenta."
-            );
+            this.queueStatusMessage(game.statusSpecialElection);
           }
           break;
 
         case STATE_PP_EXECUTION:
-          this.queueEventUpdate("UPRAWNIENIE PREZYDENTA");
+          this.queueEventUpdate(game.eventPower);
           if (isPresident) {
             this.queueAlert(
               SelectExecutionPrompt(name, newState, this.sendWSCommand),
               true
             );
           } else {
-            this.queueStatusMessage(
-              "Egzekucja: prezydent wybiera gracza do stracenia."
-            );
+            this.queueStatusMessage(game.statusExecution);
           }
           break;
 
         case STATE_PP_INVESTIGATE:
-          this.queueEventUpdate("UPRAWNIENIE PREZYDENTA");
+          this.queueEventUpdate(game.eventPower);
           if (isPresident) {
             this.queueAlert(
               SelectInvestigationPrompt(name, newState, this.sendWSCommand)
             );
           } else {
-            this.queueStatusMessage(
-              "Śledztwo: prezydent wybiera gracza do zbadania."
-            );
+            this.queueStatusMessage(game.statusInvestigation);
           }
           break;
 
@@ -1186,15 +1209,12 @@ class App extends Component<{}, AppState> {
                 console.log("Special Election Alert: " + newState.targetUser);
                 this.queueAlert(
                   <ButtonPrompt
-                    label={"WYBORY SPECJALNE"}
-                    footerText={
-                      newState[PARAM_PRESIDENT] +
-                      " wybrał(a) " +
-                      newState.targetUser +
-                      " na następnego prezydenta." +
-                      "\nPo następnej rundzie powróci normalna kolejność prezydentów."
-                    }
-                    buttonText={"OK"}
+                    label={prompts.specialElectionLabel}
+                    footerText={prompts.specialElectionResult(
+                      newState[PARAM_PRESIDENT],
+                      newState.targetUser!
+                    )}
+                    buttonText={common.ok}
                     buttonOnClick={this.hideAlertAndFinish}
                   >
                     <PlayerDisplay
@@ -1216,18 +1236,17 @@ class App extends Component<{}, AppState> {
               if (!isPresident) {
                 let isTarget = newState.targetUser === name;
                 let footerText = isTarget
-                  ? `You have been investigated by ${newState[PARAM_PRESIDENT]}. The president now knows your party affiliation.`
-                  : `${newState.targetUser} został(a) zbadany(a) przez ${newState[PARAM_PRESIDENT]}. Prezydent zna teraz jego/jej przynależność partyjną.`;
+                  ? prompts.investigatedYou(newState[PARAM_PRESIDENT])
+                  : prompts.investigatedOther(
+                      newState.targetUser!,
+                      newState[PARAM_PRESIDENT]
+                    );
                 this.queueAlert(
                   <ButtonPrompt
-                    label={"WYNIK ŚLEDZTWA"}
-                    // If target: You have been investigated by [President Name].
-                    //            The president now knows your party affiliation.
-                    // If not target: [Target Name] has been investigated by [President Name].
-                    //                The president now knows their party affiliation.
+                    label={prompts.investigationResultsLabel}
                     footerText={footerText}
                     buttonOnClick={this.hideAlertAndFinish}
-                    buttonText={"OK"}
+                    buttonText={common.ok}
                   >
                     <PlayerDisplay
                       user={name}
@@ -1247,9 +1266,7 @@ class App extends Component<{}, AppState> {
             default:
           }
 
-          this.queueStatusMessage(
-            "Oczekiwanie na zakończenie kadencji prezydenta."
-          );
+          this.queueStatusMessage(game.statusEndTerm);
           break;
 
         case STATE_LIBERAL_VICTORY_EXECUTION:
@@ -1289,26 +1306,39 @@ class App extends Component<{}, AppState> {
           let liberalVictoryPolicy = state === STATE_LIBERAL_VICTORY_POLICY;
           let liberalVictoryExecution =
             state === STATE_LIBERAL_VICTORY_EXECUTION;
+          let playerID = newState.players[name].id;
+          let playerWon =
+            (playerID === Role.LIBERAL &&
+              (liberalVictoryExecution || liberalVictoryPolicy)) ||
+            (playerID !== Role.LIBERAL &&
+              (fascistVictoryElection || fascistVictoryPolicy));
+
+          // Register player victory/loss with analytics.
+          // TODO: Only register if player is host, or if player is the only
+          // non-bot player in the game.
+          if (playerWon) {
+          } else {
+          }
+
           if (fascistVictoryElection || fascistVictoryPolicy) {
             players = fascistPlayers.concat(liberalPlayers);
             headerImage = VictoryFascistHeader;
-            headerAlt = "Zwycięstwo Faszystów, napisane na czerwono z ikoną czaszki.";
+            headerAlt = alt.fascistVictory;
             messageClass = "highlight";
             if (fascistVictoryPolicy) {
-              victoryMessage = "Faszyści uchwalili sześć ustaw!";
+              victoryMessage = prompts.fascistsPassedPolicies;
             } else if (fascistVictoryElection) {
-              victoryMessage =
-                "Faszyści wybrali Hitlera na kanclerza!";
+              victoryMessage = prompts.fascistsElectedHitler;
             }
           } else {
             players = liberalPlayers.concat(fascistPlayers);
             headerImage = VictoryLiberalHeader;
-            headerAlt = "Zwycięstwo Liberałów, napisane na niebiesko z ikoną gołębia.";
+            headerAlt = alt.liberalVictory;
             messageClass = "highlight-blue";
             if (liberalVictoryPolicy) {
-              victoryMessage = "Liberałowie uchwalili pięć ustaw!";
+              victoryMessage = prompts.liberalsPassedPolicies;
             } else if (liberalVictoryExecution) {
-              victoryMessage = "Liberałowie stracili Hitlera!";
+              victoryMessage = prompts.liberalsExecutedHitler;
             }
           }
           if (DEBUG) {
@@ -1335,7 +1365,7 @@ class App extends Component<{}, AppState> {
                       </>
                     );
                   }}
-                  buttonText={"WRÓĆ DO POCZEKALNI"}
+                  buttonText={prompts.returnToLobby}
                   buttonOnClick={() => {
                     this.gameOver = false;
                     this.reconnectOnConnectionClosed = true;
@@ -1435,7 +1465,7 @@ class App extends Component<{}, AppState> {
   }
 
   showVotes(newState: GameState) {
-    this.setState({ statusBarText: "Liczenie głosów..." });
+    this.setState({ statusBarText: game.statusTallying });
     setTimeout(() => {
       this.setState({ showVotes: true });
     }, 1000);
@@ -1453,11 +1483,11 @@ class App extends Component<{}, AppState> {
     setTimeout(() => {
       if (yesVotes > noVotes) {
         this.setState({
-          statusBarText: yesVotes + " - " + noVotes + ": Głosowanie przyjęte",
+          statusBarText: game.voteResult(yesVotes, noVotes, true),
         });
       } else {
         this.setState({
-          statusBarText: yesVotes + " - " + noVotes + ": Głosowanie odrzucone",
+          statusBarText: game.voteResult(yesVotes, noVotes, false),
         });
       }
     }, 2000);
@@ -1565,7 +1595,17 @@ class App extends Component<{}, AppState> {
    */
   renderGamePage() {
     return (
-      <div className="App" style={{ textAlign: "center" }}>
+      <div
+        className={
+          "App page-game" +
+          (this.state.gameState.playerOrder.length > 5
+            ? " players-two-rows"
+            : "")
+        }
+        style={{ textAlign: "center" }}
+      >
+        <header className="App-header">{common.title}</header>
+
         <CustomAlert show={this.state.showAlert}>
           {this.state.alertContent}
         </CustomAlert>
@@ -1575,7 +1615,10 @@ class App extends Component<{}, AppState> {
           message={this.state.eventBarMessage}
         />
 
-        <div style={{ backgroundColor: "var(--backgroundDark)" }}>
+        <div
+          className="game-player-area"
+          style={{ backgroundColor: "var(--backgroundDark)" }}
+        >
           <PlayerDisplay
             gameState={this.state.gameState}
             user={this.state.name}
@@ -1587,28 +1630,18 @@ class App extends Component<{}, AppState> {
 
         <StatusBar>{this.state.statusBarText}</StatusBar>
 
-        <div style={{ display: "inline-block" }}>
-          <div
-            id={"Board Layout"}
-            style={{
-              alignItems: "center",
-              display: "flex",
-              flexDirection: "column",
-              margin: "10px auto",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                marginTop: "15px",
-              }}
-            >
-              <Deck cardCount={this.state.drawDeckSize} deckType={"DRAW"} />
+        <div className="game-board-area">
+          <div id={"Board Layout"} className="game-board-layout">
+            <div className="game-deck-row">
+              <Deck
+                cardCount={this.state.drawDeckSize}
+                deckType={"DRAW"}
+                hideCount={this.state.hideCounts}
+              />
 
-              <div style={{ margin: "auto auto" }}>
+              <div className="game-deck-center">
                 <button
+                  className="end-term-button"
                   disabled={
                     this.state.gameState[PARAM_STATE] !==
                       STATE_POST_LEGISLATIVE ||
@@ -1618,20 +1651,21 @@ class App extends Component<{}, AppState> {
                     this.sendWSCommand({ command: WSCommandType.END_TERM });
                   }}
                 >
-                  {" "}
-                  ZAKOŃCZ KADENCJĘ
+                  {game.endTerm}
                 </button>
 
                 <PlayerPolicyStatus
                   numFascistPolicies={this.state.fascistPolicies}
                   numLiberalPolicies={this.state.liberalPolicies}
                   playerCount={this.state.gameState.playerOrder.length}
+                  hidePoliciesLeft={this.state.hideCounts}
                 />
               </div>
 
               <Deck
                 cardCount={this.state.discardDeckSize}
                 deckType={"DISCARD"}
+                hideCount={this.state.hideCounts}
               />
             </div>
 
@@ -1654,16 +1688,6 @@ class App extends Component<{}, AppState> {
   //</editor-fold>
 
   render() {
-    // Check URL params. If joining from a lobby link, open the lobby with the given code.
-    let url = window.location.search;
-    let lobby = new URLSearchParams(url).get("lobby");
-    if (lobby !== null && !this.state.lobbyFromURL) {
-      this.setState({
-        joinLobby: lobby.toUpperCase().substr(0, 4),
-        lobbyFromURL: true,
-      });
-    }
-
     let page_render;
     switch (this.state.page) {
       case PAGE.LOBBY:
@@ -1676,11 +1700,7 @@ class App extends Component<{}, AppState> {
       default:
         page_render = this.renderLoginPage();
     }
-    return (
-      <>
-        {page_render}
-      </>
-    );
+    return page_render;
   }
 }
 

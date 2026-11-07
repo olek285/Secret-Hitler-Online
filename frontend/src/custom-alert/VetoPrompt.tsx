@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { prompts } from "../strings";
 import ButtonPrompt from "./ButtonPrompt";
 import { SERVER_TIMEOUT } from "../constants";
 import { SendWSCommand, WSCommandType } from "../types";
@@ -36,33 +37,25 @@ class VetoPrompt extends Component<VetoPromptProps, VetoPromptState> {
   render() {
     return (
       <ButtonPrompt
-        label={"WETO LEGISLATYWNE"}
+        label={prompts.vetoLabel}
         renderHeader={() => {
           return (
             <>
-              <p className={"left-align"}>
-                Kanclerz poprosił o odrzucenie obu ustaw.
-              </p>
+              <p className={"left-align"}>{prompts.vetoRequested}</p>
               {this.props.electionTracker === 2 && (
                 <p className={"left-align highlight"}>
-                  Jeśli weto zostanie zaakceptowane, pierwsza ustawa ze stosu
-                  dobierania zostanie automatycznie uchwalona.
+                  {prompts.vetoTrackerWarning}
                 </p>
               )}
               {this.props.electionTracker !== 2 && (
-                <p className={"left-align"}>
-                  Jeśli weto zostanie zaakceptowane, pozostałe ustawy zostaną
-                  odrzucone, a licznik wyborów przesunie się o 1.
-                </p>
+                <p className={"left-align"}>{prompts.vetoTrackerAdvance}</p>
               )}
-              <p className={"left-align"}>
-                W przeciwnym razie kanclerz będzie musiał normalnie uchwalić ustawę.
-              </p>
+              <p className={"left-align"}>{prompts.vetoOtherwise}</p>
               <br />
             </>
           );
         }}
-        footerText={"Zaakceptować weto?"}
+        footerText={prompts.vetoQuestion}
         renderButton={() => {
           return (
             <>
@@ -70,13 +63,13 @@ class VetoPrompt extends Component<VetoPromptProps, VetoPromptState> {
                 onClick={() => this.onButtonClick(false)}
                 disabled={this.state.waitingForServer}
               >
-                ODRZUĆ
+                {prompts.reject}
               </button>
               <button
                 onClick={() => this.onButtonClick(true)}
                 disabled={this.state.waitingForServer}
               >
-                ZAAKCEPTUJ
+                {prompts.accept}
               </button>
             </>
           );

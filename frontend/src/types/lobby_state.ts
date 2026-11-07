@@ -55,4 +55,6 @@ export type GameState = {
   usernames?: string[];
   /** Maps from usernames to icon keys */
   icon: Record<string, string>;
+  /** Host's lobby setting: hide the pile and policies-left counts. */
+  hideCounts?: boolean;
 };

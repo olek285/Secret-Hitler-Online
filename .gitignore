@@ -25,3 +25,7 @@ bin
 **/.env.local
 **/.env.*.local
 !**/.env.example
+
+# Python
+__pycache__/
+*.pyc

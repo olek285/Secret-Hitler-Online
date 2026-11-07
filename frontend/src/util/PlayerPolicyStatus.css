@@ -30,32 +30,7 @@
     margin-top: 0;
     color: var(--textColorWhite);
 }
-
-#pps-rules {
-    text-align: left;
-    border-top: 1px solid var(--textColorOnDark);
-    margin-top: 8px;
-    padding-top: 6px;
-}
-
-#pps-rules p {
-    font-size: clamp(0.7rem, 1.7vmin, 0.95rem);
-    font-weight: normal;
-    margin: 3px 0;
-}
-
-@media (max-width: 600px) {
-    #pps-container {
-        margin: 6px 2px;
-        padding: 7px;
-    }
-
-    #pps-text {
-        font-size: 0.85rem;
-    }
-
-    #pps-icon {
-        width: 9vw;
-        height: 9vw;
-    }
+/* The phone layout (mobile.css) swaps in the short labels. */
+.pps-short {
+    display: none;
 }

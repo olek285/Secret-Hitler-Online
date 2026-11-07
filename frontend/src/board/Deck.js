@@ -1,9 +1,10 @@
 import React, {Component} from "react";
 import PropTypes from "prop-types";
-import DiscardDeck from "../assets/board-discard.png";
-import DrawDeck from "../assets/board-draw.png";
-import PolicyBack from "../assets/board-policy.png";
+import DiscardDeck from "../assets/pl/board-discard.png";
+import DrawDeck from "../assets/pl/board-draw.png";
+import PolicyBack from "../assets/pl/board-policy.png";
 import './Deck.css';
+import { alt } from '../strings';
 
 const MAX_CARDS = 17;
 // These two are the final locations for cards in the hide/show states (or the start for the transitions).
@@ -91,7 +92,7 @@ class Deck extends Component {
                     id={"deck-policy"}
                     style={{top: top + "%"}}
                     className={this.cardStates[i]}
-                    alt={"Ustawa w " + (this.props.deckType === "DRAW" ? "stosie dobierania." : "stosie odrzuconych ustaw.")}
+                    alt={alt.deckCard(this.props.deckType)}
                     key={i}
                 />
             )
@@ -102,12 +103,13 @@ class Deck extends Component {
     render() {
         return(
             <div id={"deck-container"} style={{position:"relative"}}>
-                <p id={"deck-card-count"}>
-                    {this.numCards}
-                </p>
+                {!this.props.hideCount &&
+                    <p id={"deck-card-count"}>
+                        {this.numCards}
+                    </p>}
                 <img id={"deck-base"}
                      src={(this.props.deckType === "DRAW" ? DrawDeck : DiscardDeck)}
-                     alt={"Stos " + (this.props.deckType === "DRAW" ? "dobierania" : "odrzuconych ustaw") + " (" + this.props.cardCount + " ustaw)"}/>
+                     alt={alt.deck(this.props.deckType, this.props.hideCount ? undefined : this.props.cardCount)}/>
                 {this.getCards()}
             </div>
         );
@@ -117,6 +119,7 @@ class Deck extends Component {
 Deck.propTypes = {
     cardCount: PropTypes.number.isRequired,
     deckType: PropTypes.string.isRequired,
+    hideCount: PropTypes.bool, // lobby setting: hide the number on the pile
 };
 
 export default Deck;

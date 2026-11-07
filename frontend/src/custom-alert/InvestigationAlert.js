@@ -2,10 +2,11 @@ import React, { Component } from "react";
 import PropTypes from "prop-types";
 import ButtonPrompt from "./ButtonPrompt";
 
-import PartyBack from "../assets/party-membership.png";
-import PartyLiberal from "../assets/party-membership-liberal.png";
-import PartyFascist from "../assets/party-membership-fascist.png";
+import PartyBack from "../assets/pl/party-membership.png";
+import PartyLiberal from "../assets/pl/party-membership-liberal.png";
+import PartyFascist from "../assets/pl/party-membership-fascist.png";
 import { LIBERAL } from "../constants";
+import { common, prompts } from "../strings";
 
 import "./InvestigationAlert.css";
 
@@ -30,8 +31,7 @@ class InvestigationAlert extends Component {
   }
 
   render() {
-    let alt =
-      this.props.target + " należy do partii " + this.props.party + ".";
+    let alt = prompts.partyMember(this.props.target, this.props.party);
     let cardFrontSrc =
       this.props.party === LIBERAL ? PartyLiberal : PartyFascist;
     let footerClass = this.state.showText
@@ -42,20 +42,17 @@ class InvestigationAlert extends Component {
       : "investigation-container-default";
     return (
       <ButtonPrompt
-        label={"WYNIK ŚLEDZTWA"}
+        label={prompts.investigationResultsLabel}
         renderFooter={() => {
           return (
             <p id="investigation-text" className={footerClass}>
-              {this.props.target +
-                " należy do partii " +
-                this.props.party +
-                "."}
+              {alt}
             </p>
           );
         }}
         buttonOnClick={this.props.hideAlert}
         buttonDisabled={this.state.disableButton}
-        buttonText={"OK"}
+        buttonText={common.ok}
       >
         <div id={"party-card-container"}>
           <img

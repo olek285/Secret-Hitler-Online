@@ -1,0 +1,13 @@
+# Private LAN game night. Start with ./game-night.sh (it fills in PUBLIC_URL).
+services:
+  game:
+    build: .
+    image: secret-hitler-gamenight
+    container_name: secret-hitler-gamenight
+    ports:
+      - "${HOST_PORT:-80}:8080"
+    environment:
+      # Address phones should open; shown as the QR code when the host views the
+      # game on http://localhost.
+      PUBLIC_URL: ${PUBLIC_URL:-}
+    restart: unless-stopped

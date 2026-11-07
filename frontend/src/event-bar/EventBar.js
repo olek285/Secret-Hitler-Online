@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import "./EventBar.css";
+import { game } from "../strings";
 
 class EventBar extends Component {
 
@@ -35,7 +36,7 @@ class EventBar extends Component {
 }
 
 EventBar.defaultProps = {
-    message: "NOMINACJA KANCLERZA",
+    message: game.eventNomination,
     show: true
 };
 

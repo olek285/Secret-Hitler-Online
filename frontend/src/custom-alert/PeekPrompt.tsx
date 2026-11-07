@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { common, prompts } from "../strings";
 import { SERVER_TIMEOUT } from "../constants";
 import PolicyDisplay from "../util/PolicyDisplay";
 import ButtonPrompt from "./ButtonPrompt";
@@ -44,9 +45,9 @@ class PeekPrompt extends Component<PeekPromptProps, PeekPromptState> {
   render() {
     return (
       <ButtonPrompt
-        label={"PODGLĄD"}
-        headerText={"To trzy następne ustawy ze stosu dobierania."}
-        buttonText={"OK"}
+        label={prompts.peekLabel}
+        headerText={prompts.peekHelp}
+        buttonText={common.ok}
         buttonOnClick={this.onButtonClick}
         buttonDisabled={this.state.waitingForServer}
       >

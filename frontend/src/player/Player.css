@@ -2,8 +2,7 @@
 
 #player-container {
     position:relative;
-    margin: 0 auto;
-    width: min(20vmin, 16vh);
+    margin: 5px;
     border-radius: 16%/10%;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -22,12 +21,8 @@
 #player-icon {
     position: absolute;
     width: 82%;
-    aspect-ratio: 1;
     left: 9%;
     top: 6.3%;
-    object-fit: cover;
-    object-position: center;
-    border-radius: 50%;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -39,8 +34,8 @@
 }
 
 #player-image {
-    width: 100%;
-    max-width: none;
+    width: 20vmin;
+    max-width: 16vh;
     height: auto;
     image-rendering: crisp-edges;
     display: block;
@@ -70,9 +65,9 @@
 
 #player-identity-icon {
     position:absolute;
-    top: 71%;
-    left: 32%;
-    width: 36%;
+    top: 75%;
+    left: 8%;
+    width: 28%;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -93,6 +88,31 @@
     top: 43%;
     left: 14%;
     transition: 0.5s visibility;
+}
+
+#player-identity-label {
+    position:absolute;
+    top: 69%;
+    left: 36%;
+    width: 50%;
+    height: 12%;
+    /*noinspection CssInvalidFunction*/
+    font-size: min(2.3vh, 3vmin);
+    color: var(--textColorHighlight);
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    font-family: var(--textFont);
+}
+
+#player-identity-label.liberal-text {
+    color: var(--textColorLiberal);
+}
+
+/* "Faszysta" is wider than the label box; shrink it so it stays inside the tile. */
+#player-identity-label .player-identity-long {
+    font-size: 0.88em;
 }
 
 #player-disabled-label {

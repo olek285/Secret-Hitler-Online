@@ -2,8 +2,9 @@ import React, {Component} from 'react';
 import PropTypes from "prop-types";
 import ButtonPrompt from "./ButtonPrompt";
 
-import ETBoard from '../assets/board-election-tracker.png';
+import ETBoard from '../assets/pl/board-election-tracker.png';
 import ETToken from '../assets/board-tracker.png';
+import { alt, common, prompts } from '../strings';
 
 import './ElectionTrackerAlert.css';
 
@@ -22,31 +23,25 @@ class ElectionTrackerAlert extends Component {
     render() {
         return (
             <ButtonPrompt
-                label={"RZĄD NIE ZOSTAŁ UCHWALONY"}
+                label={prompts.trackerLabel}
                 renderHeader={() => {
                     return (<>
-                            <p className={"left-align"}>
-                                Licznik wyborów przesuwa się o 1 za każdym razem, gdy rząd nie uchwali
-                                (lub odmawia uchwalenia) ustawy, i resetuje się po każdym jej uchwaleniu.
-                            </p>
-                            <p className={"left-align highlight"}>
-                                Gdy licznik osiągnie 3, pierwsza ustawa ze stosu dobierania zostaje natychmiast
-                                uchwalona. Nie uruchamiają się wtedy uprawnienia prezydenta, a wszystkie ograniczenia kadencji zostają zresetowane.
-                            </p>
+                            <p className={"left-align"}>{prompts.trackerHelp}</p>
+                            <p className={"left-align highlight"}>{prompts.trackerWarning}</p>
                         </>);
                 }}
-                buttonText={"OK"}
+                buttonText={common.ok}
                 buttonOnClick={this.props.closeAlert}
             >
                 <div id={"election-tracker-container"}>
                     <img id="election-tracker-board"
                          src={ETBoard}
-                         alt={"Plansza licznika wyborów. Niebieska plansza z czterema polami, po których przesuwa się licznik."}
+                         alt={alt.trackerBoard}
                     />
                     <img id="election-tracker-token"
                          className={this.state.trackerClass}
                          src={ETToken}
-                         alt={"Znacznik licznika wyborów na pozycji " + this.props.trackerPosition + " z 3."}
+                         alt={alt.trackerPosition(this.props.trackerPosition)}
                      />
                 </div>
             </ButtonPrompt>

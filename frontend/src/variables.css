@@ -1,10 +1,10 @@
 :root {
     --headerFill:#e05b2b;
     --headerTextColor: #ffffff;
-    --headerFont: Georgia, 'Times New Roman', serif;
+    --headerFont: 'Germania PL', cursive;
     --backgroundLight: #4d4945;
     --backgroundDark: #372e25;
-    --textFont: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Arial, sans-serif;
+    --textFont: Montserrat, sans-serif;
     --textColorOnWhite: #69645e;
     --textColorOnDark: #bbbbbb;
     --textColorHighlight: var(--headerFill);
