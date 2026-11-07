@@ -67,7 +67,9 @@ javadoc {
 }
 
 // Define the main class for the application
-mainClassName = 'server.SecretHitlerServer'
+application {
+    mainClass = 'server.SecretHitlerServer'
+}
 
 task runLocal(type: JavaExec) {
     mainClass = "game.ApplicationTest"

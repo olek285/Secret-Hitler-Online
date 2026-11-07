@@ -1,68 +1,61 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Frontend — polska wersja lokalna
 
-## Available Scripts
+Projekt został utworzony za pomocą [Create React App](https://github.com/facebook/create-react-app).
 
-In the project directory, you can run:
+Frontend jest przeznaczony do lokalnej gry ze znajomymi. Po uruchomieniu backendu komputery i telefony muszą być w tej samej sieci Wi-Fi.
+
+## Instalacja
+
+W katalogu `frontend` zainstaluj zależności:
+
+```powershell
+npm install
+Copy-Item .env.example .env.local
+```
+
+Plik `.env.local` jest lokalny i nie powinien być publikowany. Ustaw w nim adres IP komputera, na którym działa backend.
+
+## Uruchomienie dla gry lokalnej
+
+W PowerShell:
+
+```powershell
+cd frontend
+npm.cmd run devLocal
+```
+
+Otwórz frontend na komputerze pod adresem `http://localhost:3000`. W lobby pojawi się link i kod QR, które można przekazać graczom korzystającym z telefonów. Jeśli adres IP komputera jest inny, zaktualizuj `frontend/.env.local`.
+
+## Dostępne skrypty
+
+W katalogu projektu możesz uruchomić:
 
 ### `npm start`
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+Uruchamia aplikację w trybie deweloperskim. Otwórz [http://localhost:3000](http://localhost:3000), aby ją zobaczyć. Strona odświeża się po zmianie plików, a błędy lintowania są widoczne w konsoli.
 
 ### `npm test`
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Uruchamia testy w interaktywnym trybie obserwowania. Więcej informacji znajduje się w [dokumentacji testów](https://facebook.github.io/create-react-app/docs/running-tests).
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Tworzy produkcyjną wersję aplikacji w katalogu `build`. Pliki są zminimalizowane i otrzymują haszowane nazwy.
 
 ### `npm run eject`
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+**To operacja jednokierunkowa. Po jej wykonaniu nie można wrócić do poprzedniej konfiguracji.**
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Polecenie kopiuje konfigurację oraz zależności przechodnie (Webpack, Babel, ESLint itd.) do projektu, zapewniając pełną kontrolę nad narzędziami.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## Więcej informacji
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+Przeczytaj [dokumentację Create React App](https://facebook.github.io/create-react-app/docs/getting-started) oraz [dokumentację React](https://reactjs.org/).
 
-## Learn More
+Pozostałe sekcje dokumentacji Create React App:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+- [Dzielenie kodu](https://facebook.github.io/create-react-app/docs/code-splitting)
+- [Analiza rozmiaru paczki](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- [Własna konfiguracja](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- [Wdrażanie](https://facebook.github.io/create-react-app/docs/deployment)
+- [Problemy z minifikacją](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)

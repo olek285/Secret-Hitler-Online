@@ -9,12 +9,21 @@ export enum PAGE {
 }
 
 export const DEBUG = process.env.REACT_APP_DEBUG !== undefined;
-// With no REACT_APP_* overrides, talk to whichever server served the page.
-// That is how the self-hosted build works: one container serves both.
+// With no REACT_APP_* overrides, a production build talks to whichever server
+// served the page (the self-hosted container serves both). The dev server
+// (`npm run devLocal`, port 3000) talks to the game server on the same host as
+// the page, port 4040, so phones on the Wi-Fi work without editing any IP.
+const IS_DEV_SERVER = process.env.NODE_ENV === "development";
+const DEFAULT_HOST = IS_DEV_SERVER
+  ? `${window.location.hostname}:${process.env.REACT_APP_SERVER_PORT || "4040"}`
+  : window.location.host;
 export const SERVER_ADDRESS =
-  process.env.REACT_APP_SERVER_ADDRESS || window.location.host;
+  process.env.REACT_APP_SERVER_ADDRESS || DEFAULT_HOST;
 export const SERVER_ADDRESS_HTTP =
-  process.env.REACT_APP_SERVER_ADDRESS_HTTP || window.location.origin;
+  process.env.REACT_APP_SERVER_ADDRESS_HTTP ||
+  (IS_DEV_SERVER
+    ? `${window.location.protocol}//${DEFAULT_HOST}`
+    : window.location.origin);
 export const WEBSOCKET_HEADER =
   process.env.REACT_APP_WEBSOCKET_HEADER ||
   (window.location.protocol === "https:" ? "wss://" : "ws://");
