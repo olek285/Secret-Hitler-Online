@@ -110,6 +110,11 @@
     color: var(--textColorLiberal);
 }
 
+/* "Faszysta" is wider than the label box; shrink it so it stays inside the tile. */
+#player-identity-label .player-identity-long {
+    font-size: 0.88em;
+}
+
 #player-disabled-label {
     position:absolute;
     top: 0;

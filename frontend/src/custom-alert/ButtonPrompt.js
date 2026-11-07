@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import { common } from '../strings';
 import PropTypes from 'prop-types';
 
 /**
@@ -28,7 +29,7 @@ class ButtonPrompt extends Component {
 
 // noinspection JSUnusedGlobalSymbols
 ButtonPrompt.defaultProps = {
-    label: "LABEL GOES HERE",
+    label: "",
     renderLabel: (obj) => {
         return (<h2 id={"prompt-label"} className={"left-align"}>{obj.props.label}</h2>);
     },
@@ -47,7 +48,7 @@ ButtonPrompt.defaultProps = {
         );
     },
 
-    buttonText: "CONFIRM",
+    buttonText: common.confirm,
     buttonOnClick: () => {console.log("Button clicked.")},
     buttonDisabled: false,
     renderButton: (obj) => {

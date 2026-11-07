@@ -9,18 +9,27 @@ export enum PAGE {
 }
 
 export const DEBUG = process.env.REACT_APP_DEBUG !== undefined;
+// With no REACT_APP_* overrides, talk to whichever server served the page.
+// That is how the self-hosted build works: one container serves both.
 export const SERVER_ADDRESS =
-  process.env.REACT_APP_SERVER_ADDRESS || "secret-hitler-online.fly.dev";
+  process.env.REACT_APP_SERVER_ADDRESS || window.location.host;
 export const SERVER_ADDRESS_HTTP =
-  process.env.REACT_APP_SERVER_ADDRESS_HTTP || "https://" + SERVER_ADDRESS;
+  process.env.REACT_APP_SERVER_ADDRESS_HTTP || window.location.origin;
 export const WEBSOCKET_HEADER =
-  process.env.REACT_APP_WEBSOCKET_HEADER || "wss://";
+  process.env.REACT_APP_WEBSOCKET_HEADER ||
+  (window.location.protocol === "https:" ? "wss://" : "ws://");
+
+// The single permanent lobby everyone joins. Must match
+// SecretHitlerServer.HOUSE_LOBBY_CODE on the backend.
+export const HOUSE_LOBBY = process.env.REACT_APP_HOUSE_LOBBY || "HOME";
+export const JOIN_URL = "/join-url";
+export const PARAM_CLIENT = "client";
 
 export const CHECK_LOGIN = "/check-login";
 export const NEW_LOBBY = "/new-lobby";
 export const WEBSOCKET = "/game";
 export const SERVER_PING = "/ping";
-export const MAX_FAILED_CONNECTIONS = 5;
+export const MAX_FAILED_CONNECTIONS = 12; // with backoff this is roughly a minute of retrying
 export const LOBBY_CODE_LENGTH = 4;
 export const SERVER_TIMEOUT = 4000;
 export const PING_INTERVAL = 50000;
@@ -90,6 +99,8 @@ export const STATE_FASCIST_VICTORY_ELECTION = "FASCIST_VICTORY_ELECTION"; // Fas
 // Lobby
 export const PARAM_USER_COUNT = "user-count";
 export const PARAM_USERNAMES = "usernames";
+// Lobby setting (host only): hide the pile and policies-left counts in the game.
+export const PARAM_HIDE_COUNTS = "hideCounts";
 
 // Peek
 export const PARAM_PEEK = "peek";

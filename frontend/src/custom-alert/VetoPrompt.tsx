@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { prompts } from "../strings";
 import ButtonPrompt from "./ButtonPrompt";
 import { SERVER_TIMEOUT } from "../constants";
 import { SendWSCommand, WSCommandType } from "../types";
@@ -36,34 +37,25 @@ class VetoPrompt extends Component<VetoPromptProps, VetoPromptState> {
   render() {
     return (
       <ButtonPrompt
-        label={"LEGISLATIVE VETO"}
+        label={prompts.vetoLabel}
         renderHeader={() => {
           return (
             <>
-              <p className={"left-align"}>
-                The chancellor has requested to veto the agenda.
-              </p>
+              <p className={"left-align"}>{prompts.vetoRequested}</p>
               {this.props.electionTracker === 2 && (
                 <p className={"left-align highlight"}>
-                  If the veto is accepted, the top policy on the draw pile will
-                  be automatically enacted.
+                  {prompts.vetoTrackerWarning}
                 </p>
               )}
               {this.props.electionTracker !== 2 && (
-                <p className={"left-align"}>
-                  If the veto is accepted, the remaining policies will be
-                  discarded and the election tracker will advance by 1.
-                </p>
+                <p className={"left-align"}>{prompts.vetoTrackerAdvance}</p>
               )}
-              <p className={"left-align"}>
-                Otherwise, the chancellor will be required to enact a policy as
-                normal.
-              </p>
+              <p className={"left-align"}>{prompts.vetoOtherwise}</p>
               <br />
             </>
           );
         }}
-        footerText={"Accept the veto?"}
+        footerText={prompts.vetoQuestion}
         renderButton={() => {
           return (
             <>
@@ -71,13 +63,13 @@ class VetoPrompt extends Component<VetoPromptProps, VetoPromptState> {
                 onClick={() => this.onButtonClick(false)}
                 disabled={this.state.waitingForServer}
               >
-                REJECT
+                {prompts.reject}
               </button>
               <button
                 onClick={() => this.onButtonClick(true)}
                 disabled={this.state.waitingForServer}
               >
-                ACCEPT
+                {prompts.accept}
               </button>
             </>
           );

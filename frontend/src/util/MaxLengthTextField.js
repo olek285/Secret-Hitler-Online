@@ -47,9 +47,9 @@ class MaxLengthTextField extends Component {
 
     render() {
         return (
-            <div style={{flexDirection:"column", margin:"10px"}}>
+            <div className="mltf" style={{flexDirection:"column", margin:"10px"}}>
                 <label>
-                    <div style={{display:"flex", width:"calc(10px + 40vmin)", flexDirection:"row", marginLeft:"auto", marginRight:"auto"}}>
+                    <div className="mltf-header">
                         <p style={{margin:"2px"}}>{this.props.label}</p>
                         <p style={{margin:"2px", marginLeft:"auto"}}>{this.charactersLeft()}</p>
                     </div>
@@ -58,6 +58,10 @@ class MaxLengthTextField extends Component {
                             onChange={this.handleChange}
                             placeholder={this.props.placeholder}
                             autoComplete={"off"}
+                            autoCorrect={"off"}
+                            autoCapitalize={"words"}
+                            spellCheck={false}
+                            enterkeyhint={"go"}
                     >
                     </input>
                 </label>
@@ -69,9 +73,9 @@ class MaxLengthTextField extends Component {
 
 MaxLengthTextField.defaultProps = {
     maxLength: 12, /*Set to -1 to disable.*/
-    label: "Label",
+    label: "",
     placeholder: "",
-    textAreaLabel: "Prompt Here",
+    textAreaLabel: "",
     showCharCount: true, /*Shows the remaining characters left (before hitting the maxLength).*/
     forceUpperCase: false /*Set to true to make all character input uppercase.*/
 };

@@ -8,5 +8,3 @@ declare module "*.svg" {
   export = value;
 }
 
-// TODO: Delete this once this package is removed.
-declare module "react-twitter-embed";

@@ -1,4 +1,5 @@
 import React, { ReactElement, useEffect, useRef, useState } from "react";
+import { prompts } from "../strings";
 import PlayerDisplayPrompt from "./PlayerDisplayPrompt";
 import { SERVER_TIMEOUT } from "../constants";
 import {
@@ -98,21 +99,18 @@ export const SelectNominationPrompt = (
     <SelectPlayerPrompt
       user={user}
       commandType={WSCommandType.NOMINATE_CHANCELLOR}
-      label={"NOMINATION"}
+      label={prompts.nominationLabel}
       gameState={gameState}
       sendWSCommand={sendWSCommand}
       renderHeader={() => {
         return (
           <div>
-            <p className="left-align">
-              Nominate a player to become the next Chancellor.
-            </p>
+            <p className="left-align">{prompts.nominationHelp}</p>
             <p
               className="left-align highlight"
               hidden={!shouldFascistVictoryWarningBeShown}
             >
-              Fascists will win if Hitler is nominated and voted in as
-              Chancellor!
+              {prompts.nominationHitlerWarning}
             </p>
           </div>
         );
@@ -145,22 +143,13 @@ export const SelectInvestigationPrompt = (
       commandType={WSCommandType.GET_INVESTIGATION}
       disabledFilter={DISABLE_INVESTIGATED_PLAYERS}
       includeUser={false}
-      label={"INVESTIGATE LOYALTY"}
+      label={prompts.investigateLabel}
       renderHeader={() => {
         return (
           <>
-            <p className={"left-align"}>
-              Choose a player and investigate their party alignment. You'll
-              learn if the player is a member of the Fascist or Liberal party,
-              but not their specific role (e.g., Hitler).
-            </p>
-            <p className={"left-align"}>
-              Players that have been investigated once cannot be investigated
-              again.
-            </p>
-            <p className={"left-align highlight"}>
-              (Remember that you can lie about the player's party alignment!)
-            </p>
+            <p className={"left-align"}>{prompts.investigateHelp}</p>
+            <p className={"left-align"}>{prompts.investigateOnce}</p>
+            <p className={"left-align highlight"}>{prompts.investigateLie}</p>
           </>
         );
       }}
@@ -181,10 +170,8 @@ export const SelectSpecialElectionPrompt = (
       commandType={WSCommandType.REGISTER_SPECIAL_ELECTION}
       disabledFilter={DISABLE_EXECUTED_PLAYERS}
       includeUser={false}
-      label={"SPECIAL ELECTION"}
-      headerText={
-        "Choose any player to become the next president. Once their term is finished, the order continues as normal."
-      }
+      label={prompts.specialElectionLabel}
+      headerText={prompts.specialElectionHelp}
     />
   );
 };
@@ -202,16 +189,13 @@ export const SelectExecutionPrompt = (
       commandType={WSCommandType.REGISTER_EXECUTION}
       disabledFilter={DISABLE_EXECUTED_PLAYERS}
       includeUser={false}
-      label={"EXECUTION"}
+      label={prompts.executionLabel}
       renderHeader={() => {
         return (
           <>
-            <p className={"left-align"}>
-              Choose a player to execute. That player can no longer speak, vote,
-              or run for office.
-            </p>
+            <p className={"left-align"}>{prompts.executionHelp}</p>
             <p className={"left-align highlight"}>
-              The game ends and Liberals win if Hitler is executed.
+              {prompts.executionHitlerWarning}
             </p>
           </>
         );

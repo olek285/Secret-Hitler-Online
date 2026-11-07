@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { prompts } from "../strings";
 import ButtonPrompt from "./ButtonPrompt";
 import { SERVER_TIMEOUT } from "../constants";
 
@@ -50,11 +51,9 @@ class PresidentLegislativePrompt extends Component<
   render() {
     return (
       <ButtonPrompt
-        label={"LEGISLATIVE SESSION"}
-        headerText={
-          "Choose a policy to discard. The remaining policies are given to the chancellor."
-        }
-        buttonText={"DISCARD"}
+        label={prompts.legislativeLabel}
+        headerText={prompts.presidentDiscardHelp}
+        buttonText={prompts.discard}
         buttonOnClick={this.onButtonClick}
         buttonDisabled={
           this.state.selection === undefined || this.state.waitingForServer

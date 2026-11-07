@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { alt, prompts } from "../strings";
 import ButtonPrompt from "./ButtonPrompt";
 import {
   PARAM_CHANCELLOR,
@@ -9,8 +10,8 @@ import {
 } from "../constants";
 import "../selectable.css";
 import "./VotingPrompt.css";
-import YesVote from "../assets/vote-yes.png";
-import NoVote from "../assets/vote-no.png";
+import YesVote from "../assets/pl/vote-yes.png";
+import NoVote from "../assets/pl/vote-no.png";
 import Player from "../player/Player";
 import { GameState, Role, SendWSCommand, WSCommandType } from "../types";
 
@@ -97,7 +98,7 @@ class VotingPrompt extends Component<VotingPromptProps, VotingPromptState> {
     let presidentName = this.props.gameState[PARAM_PRESIDENT];
     return (
       <ButtonPrompt
-        label={"VOTING"}
+        label={prompts.votingLabel}
         renderHeader={() => {
           return (
             <>
@@ -111,31 +112,22 @@ class VotingPrompt extends Component<VotingPromptProps, VotingPromptState> {
               />
 
               <p className="left-align">
-                {presidentName +
-                  " has nominated " +
-                  chancellorName +
-                  " as chancellor."}
+                {prompts.votingNominated(presidentName, chancellorName)}
               </p>
               <p className="left-align">
-                {
-                  "Vote on whether you want this government to proceed; The vote passes if over 50% of the votes are yes."
-                }
+                {prompts.votingHelp}
               </p>
 
               {/* These are two optional warnings that appear when player decisions are extra critical,
                                       such as if fascists can win the game or if the voting tracker will hit the end. */}
               {this.props.gameState.fascistPolicies >= 3 && (
                 <p className="highlight left-align">
-                  {
-                    "Fascists will win if Hitler is successfully voted in as chancellor!"
-                  }
+                  {prompts.votingHitlerWarning}
                 </p>
               )}
               {this.props.gameState.electionTracker === 2 && (
                 <p className="highlight left-align">
-                  {
-                    "If this vote fails, the next policy in the draw deck will be immediately enacted."
-                  }
+                  {prompts.votingTrackerWarning}
                 </p>
               )}
             </>
@@ -154,7 +146,7 @@ class VotingPrompt extends Component<VotingPromptProps, VotingPromptState> {
               (this.state.selection === "yes" ? "selected " : "")
             } /*Determines if this should be selected.*/
             src={YesVote}
-            alt={"Ja! (Yes)"}
+            alt={alt.voteYes}
             onClick={() => this.setState({ selection: "yes" })}
           />
           <img
@@ -163,7 +155,7 @@ class VotingPrompt extends Component<VotingPromptProps, VotingPromptState> {
               "selectable " + (this.state.selection === "no" ? "selected " : "")
             }
             src={NoVote}
-            alt={"Nein (No)"}
+            alt={alt.voteNo}
             onClick={() => this.setState({ selection: "no" })}
           />
         </div>

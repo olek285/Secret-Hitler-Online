@@ -1,7 +1,7 @@
 :root {
     --headerFill:#e05b2b;
     --headerTextColor: #ffffff;
-    --headerFont: Germania One, cursive;
+    --headerFont: 'Germania PL', cursive;
     --backgroundLight: #4d4945;
     --backgroundDark: #372e25;
     --textFont: Montserrat, sans-serif;

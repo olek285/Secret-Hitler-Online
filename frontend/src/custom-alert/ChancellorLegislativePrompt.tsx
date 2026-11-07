@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { prompts } from "../strings";
 import ButtonPrompt from "./ButtonPrompt";
 import { SERVER_TIMEOUT } from "../constants";
 
@@ -64,9 +65,7 @@ class ChancellorLegislativePrompt extends Component<
       });
     } else {
       // veto power is not activated
-      this.props.showError(
-        "Veto power is unlocked when there are 5 fascist policies."
-      );
+      this.props.showError(prompts.vetoLocked);
     }
   }
 
@@ -75,21 +74,15 @@ class ChancellorLegislativePrompt extends Component<
     let props = this.props;
     return (
       <ButtonPrompt
-        label={"LEGISLATIVE SESSION"}
-        headerText={
-          "Choose a policy to enact. The remaining policy will be discarded."
-        }
+        label={prompts.legislativeLabel}
+        headerText={prompts.chancellorEnactHelp}
         renderHeader={() => {
           return (
             <>
-              <p className={"left-align"}>
-                Choose a policy to enact. The remaining policy will be
-                discarded.
-              </p>
+              <p className={"left-align"}>{prompts.chancellorEnactHelp}</p>
               {props.fascistPolicies === 5 && (
                 <p className={"left-align highlight"}>
-                  Veto power unlocked: If you choose to veto and the president
-                  agrees to the veto, the agenda will be discarded.
+                  {prompts.vetoUnlocked}
                 </p>
               )}
             </>
@@ -103,7 +96,7 @@ class ChancellorLegislativePrompt extends Component<
                   onClick={this.onVetoButtonClick}
                   disabled={this.state.waitingForServer}
                 >
-                  VETO
+                  {prompts.veto}
                 </button>
               )}
               <button
@@ -113,7 +106,7 @@ class ChancellorLegislativePrompt extends Component<
                   this.state.waitingForServer
                 }
               >
-                ENACT
+                {prompts.enact}
               </button>
             </div>
           );

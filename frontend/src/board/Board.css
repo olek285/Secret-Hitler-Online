@@ -64,3 +64,14 @@
     transition: 1.0s left;
     transition-timing-function: ease-in-out;
 }
+/* One-line reminder of what the next Fascist policy does. */
+#fascist-power-hint {
+    margin: 2px 10px 6px;
+    font-size: calc(10px + 0.8vmin);
+    font-weight: 500;
+    color: var(--textColorWhite);
+    opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

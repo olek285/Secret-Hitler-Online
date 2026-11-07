@@ -16,6 +16,7 @@ import IconBusy from "../assets/player-icon-busy.png";
 import YesVote from "../assets/player-icon-ja.png";
 import NoVote from "../assets/player-icon-nein.png";
 import portraits, {portraitsAltText} from "../assets";
+import { alt, game, roleName } from "../strings";
 
 const LIBERAL = "LIBERAL";
 const FASCIST = "FASCIST";
@@ -48,15 +49,6 @@ class Player extends Component {
             default:
                 return IconHitler;
         }
-    }
-
-    /**
-     * Capitalizes only the first character of the given text.
-     * @param {String} text the text to capitalize.
-     * @return {String} text where only the first character is uppercase.
-     */
-    capitalizeFirstOnly(text) {
-        return text.charAt(0).toUpperCase() + text.toLowerCase().substr(1);
     }
 
     /**
@@ -116,7 +108,7 @@ class Player extends Component {
      */
     getAltText() {
         if (this.props.showRole) {
-            return this.getNameWithYouTag() + this.capitalizeFirstOnly(this.props.role);
+            return alt.playerWithRole(this.getNameWithYouTag(), this.props.role);
         } else {
             return this.getNameWithYouTag();
         }
@@ -127,7 +119,7 @@ class Player extends Component {
      */
     getNameWithYouTag() {
         if (this.props.isUser) {
-            return this.props.name + " (you)";
+            return this.props.name + " (" + game.you + ")";
         } else {
             return this.props.name;
         }
@@ -156,7 +148,9 @@ class Player extends Component {
                     <p id="player-identity-label"
                        className={this.getRoleClass() + this.getClassName() + " force-update"}
                     >
-                        {this.capitalizeFirstOnly(this.props.role)}
+                        {roleName(this.props.role).length > 7
+                            ? <span className="player-identity-long">{roleName(this.props.role)}</span>
+                            : roleName(this.props.role)}
                     </p>
                 </>
         }
@@ -218,11 +212,11 @@ class Player extends Component {
 
 Player.defaultProps = {
     isBusy: false,
-    name: "Name Here",
+    name: "",
     role: "FASCIST",
     showRole: true,
     disabled: false,
-    disabledText: "EXECUTED",
+    disabledText: game.executed,
     useAsButton: false,
     isSelected: false,
     onClick: () => {},

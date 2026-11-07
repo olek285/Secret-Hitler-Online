@@ -1,1 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Germania+One&family=Montserrat:wght@700&family=Montserrat:wght@500&display=swap");
+/* Fonts are bundled locally (see index.js) so the game works without internet. */
+
+/* Germania One plus the Polish letters it lacks (ą ć ę ł ń ś ź ż), built by
+   scripts/pl/build_font.py. Renamed because the OFL reserves "Germania One". */
+@font-face {
+  font-family: 'Germania PL';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/germania-pl.woff2') format('woff2');
+}

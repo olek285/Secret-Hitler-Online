@@ -9,6 +9,8 @@ export const enum WSCommandType {
   END_TERM = "end-term",
   // Select an icon
   SELECT_ICON = "select-icon",
+  // Host-only lobby setting
+  SET_HIDE_COUNTS = "set-hide-counts",
   // Select a player
   NOMINATE_CHANCELLOR = "nominate-chancellor",
   REGISTER_EXECUTION = "register-execution",
@@ -31,6 +33,7 @@ export type ServerRequestPayload =
   | { command: WSCommandType.REGISTER_PEEK }
   | { command: WSCommandType.END_TERM }
   | { command: WSCommandType.SELECT_ICON; icon: string }
+  | { command: WSCommandType.SET_HIDE_COUNTS; hideCounts: boolean }
   | { command: WSCommandType.NOMINATE_CHANCELLOR; target: string }
   | { command: WSCommandType.REGISTER_EXECUTION; target: string }
   | { command: WSCommandType.REGISTER_SPECIAL_ELECTION; target: string }

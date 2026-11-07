@@ -19,7 +19,6 @@ import p18 from "./player-portraits/player-portrait-18.svg";
 import p19 from "./player-portraits/player-portrait-19.svg";
 import p20 from "./player-portraits/player-portrait-20.svg";
 import p_default from "./player-portraits/player-portrait-default.svg";
-import twitter_icon from "./twitter-icon.svg";
 import badge_img from "./badge.svg";
 
 const portraits: Record<string, string> = {
@@ -75,28 +74,27 @@ export const lockedPortraits: string[] = [
 ];
 
 export const portraitsAltText: Record<string, string> = {
-  p_default: "No icon selected.",
-  p1: "A stranger in neat office attire with a dark tie.",
-  p2: "A stranger with an elegant bun hiding behind a large fan.",
-  p3: "A stranger with stylish white hair in a trendy sweater.",
-  p4: "A stranger with light, curly hair in a dark overcoat.",
-  p5: "A stranger with a bob and apron with large, hooped earrings.",
-  p6: "A stranger with an afro, wearing a sweater and a vest.",
-  p7: "A dark-haired stranger in a tidy blouse.",
-  p8: "A stranger with thick spectacles wrapped in a scarf.",
-  p9: "A stranger sporting a letterman's jacket and unkempt hair.",
-  p10: "A stranger with parted hair wearing a pair of large headphones.",
-  p11: "A stranger with a leather jacket and thick moustache.",
-  p12: "A stranger with curly dark hair in a bright trench coat.",
-  p13: "A stranger with reading glasses and a fancy sun hat.",
-  p14: "A stranger peeking out from behind a newspaper.",
-  p15: "A bald, bearded stranger in a neat cardigan.",
-  p16: "A stranger with thick white hair in distinguished military garb.",
-  p17: "A stranger who is not two toddlers stacked on top of each other.",
-  p18: "A stranger with long bangs hiding half of their face.",
-  p19: "A cat.",
-  p20: "An unsettling stranger shadowed in darkness.",
+  p_default: "Nie wybrano wyglądu.",
+  p1: "Nieznajomy w schludnym biurowym stroju i ciemnym krawacie.",
+  p2: "Nieznajoma z eleganckim kokiem chowa się za dużym wachlarzem.",
+  p3: "Nieznajomy ze stylowymi białymi włosami w modnym swetrze.",
+  p4: "Nieznajomy z jasnymi, kręconymi włosami w ciemnym płaszczu.",
+  p5: "Nieznajoma z fryzurą na boba, w fartuchu i z dużymi kolczykami-kołami.",
+  p6: "Nieznajomy z afro, w swetrze i kamizelce.",
+  p7: "Ciemnowłosa nieznajoma w schludnej bluzce.",
+  p8: "Nieznajomy w grubych okularach, owinięty szalem.",
+  p9: "Nieznajomy w kurtce baseballowej i z potarganymi włosami.",
+  p10: "Nieznajomy z przedziałkiem i w dużych słuchawkach.",
+  p11: "Nieznajomy w skórzanej kurtce i z gęstym wąsem.",
+  p12: "Nieznajoma z kręconymi ciemnymi włosami w jaskrawym trenczu.",
+  p13: "Nieznajoma w okularach do czytania i eleganckim kapeluszu.",
+  p14: "Nieznajomy wygląda zza gazety.",
+  p15: "Łysy, brodaty nieznajomy w schludnym kardiganie.",
+  p16: "Nieznajomy z gęstymi białymi włosami w dystyngowanym mundurze.",
+  p17: "Nieznajomy, który na pewno nie jest dwójką maluchów jedno na drugim.",
+  p18: "Nieznajomy z długą grzywką zasłaniającą pół twarzy.",
+  p19: "Kot.",
+  p20: "Niepokojący nieznajomy skryty w ciemności.",
 };
 
 export const badge = badge_img;
-export const twitterIcon = twitter_icon;

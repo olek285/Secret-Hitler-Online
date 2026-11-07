@@ -18,6 +18,7 @@ import {
 import "./PlayerDisplay.css";
 import { GameState, Role } from "../types";
 import { doesHitlerKnowFascists, isVictoryState } from "../utils";
+import { game } from "../strings";
 
 // <editor-fold desc="Player Filters">
 
@@ -29,7 +30,7 @@ export const DISABLE_NONE = () => {
  * Filter to disable only executed players.
  * @param name the name of the player
  * @param gameState the current game state.
- * @return {string} "EXECUTED" if the player is not alive,
+ * @return {string} game.executed if the player is not alive,
  *                  "" otherwise.
  */
 export const DISABLE_EXECUTED_PLAYERS = (
@@ -37,7 +38,7 @@ export const DISABLE_EXECUTED_PLAYERS = (
   gameState: GameState
 ) => {
   if (!gameState.players[name].alive) {
-    return "EXECUTED";
+    return game.executed;
   }
   return "";
 };
@@ -46,8 +47,8 @@ export const DISABLE_EXECUTED_PLAYERS = (
  * Filter to disable executed and investigated players.
  * @param name the name of the player
  * @param gameState the current game state.
- * @return {string} "EXECUTED" if the player is not alive,
- *                  "INVESTIGATED" if the player has been investigated,
+ * @return {string} game.executed if the player is not alive,
+ *                  game.investigated if the player has been investigated,
  *                  "" otherwise.
  */
 export const DISABLE_INVESTIGATED_PLAYERS = (
@@ -55,9 +56,9 @@ export const DISABLE_INVESTIGATED_PLAYERS = (
   gameState: GameState
 ) => {
   if (!gameState.players[name].alive) {
-    return "EXECUTED";
+    return game.executed;
   } else if (gameState.players[name].investigated) {
-    return "SEARCHED";
+    return game.investigated;
   }
   return "";
 };
@@ -66,8 +67,8 @@ export const DISABLE_INVESTIGATED_PLAYERS = (
  * Filter to disable executed and investigated players.
  * @param name the name of the player
  * @param gameState the current game state.
- * @return {string} "EXECUTED" if the player is not alive,
- *                  "TERM LIMITED" if the player is-term limited
+ * @return {string} game.executed if the player is not alive,
+ *                  game.termLimited if the player is term-limited
  *                  (the last elected chancellor and, if >5 players, the last elected president.)
  *                  "" otherwise.
  */
@@ -85,11 +86,11 @@ export const DISABLE_TERM_LIMITED_PLAYERS = (
   }
 
   if (!gameState.players[name].alive) {
-    return "EXECUTED";
+    return game.executed;
   } else if (gameState.lastChancellor === name) {
-    return "TERM LIMITED";
+    return game.termLimited;
   } else if (gameState.lastPresident === name && livingPlayers > 5) {
-    return "TERM LIMITED";
+    return game.termLimited;
   } else {
     return "";
   }
@@ -264,9 +265,9 @@ export default function PlayerDisplay(
 
         let roleText = "";
         if (playerName === props.gameState[PARAM_CHANCELLOR]) {
-          roleText = "CHANCELLOR";
+          roleText = game.chancellor;
         } else if (playerName === props.gameState.president) {
-          roleText = "PRESIDENT";
+          roleText = game.president;
         }
 
         const disabledText = props.playerDisabledFilter!(
@@ -368,8 +369,19 @@ export default function PlayerDisplay(
     resetVoteAnimation();
   }
 
+  // Phones lay all tiles out as one wrap (see mobile.css). This sets how many
+  // go in a row: everyone in one row up to 5, otherwise two balanced rows
+  // (3+3, 4+3, ... 5+5).
+  const playerCols =
+    playerOrder.length <= 5
+      ? Math.max(playerOrder.length, 1)
+      : Math.ceil(playerOrder.length / 2);
+
   return (
-    <div id="player-display">
+    <div
+      id="player-display"
+      style={{ "--player-cols": playerCols } as React.CSSProperties}
+    >
       <div id="player-display-container">{renderPlayer(0, div1)}</div>
       <div id="player-display-container">{renderPlayer(div1, div2)}</div>
       <div id="player-display-container">
