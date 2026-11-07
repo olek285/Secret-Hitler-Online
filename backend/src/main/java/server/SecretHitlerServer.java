@@ -13,6 +13,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import server.util.AvatarStore;
 import server.util.Lobby;
 
 import java.io.*;
@@ -39,7 +40,7 @@ public class SecretHitlerServer {
     public static final String PARAM_VOTE = "vote";
     public static final String PARAM_VETO = "veto";
     public static final String PARAM_CHOICE = "choice"; // the index of the chosen policy.
-    public static final String PARAM_ICON = "icon";
+    public static final String PARAM_ICON = "icon"; // a portrait id, a "photo:" id, or (select-icon only) a photo data URL.
     public static final String PARAM_CLIENT = "client"; // random per-browser id, used to reclaim a seat on reconnect.
     public static final String PARAM_HIDE_COUNTS = "hideCounts"; // lobby setting: hide pile and policies-left counts.
 
@@ -76,6 +77,13 @@ public class SecretHitlerServer {
     public static final String COMMAND_REGISTER_PEEK = "register-peek";
 
     public static final String COMMAND_END_TERM = "end-term";
+
+    // GET <AVATAR_PATH>/<photo id> serves an uploaded photo (see AvatarStore).
+    // Must match AVATAR in the frontend constants.
+    public static final String AVATAR_PATH = "/avatar";
+
+    // Longest part of a websocket message written to the log (photos are ~45,000 chars).
+    private static final int MAX_LOGGED_MESSAGE_LENGTH = 300;
 
     private static final String CODE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTWXYZ"; // u,v characters can look ambiguous
     private static final int CODE_LENGTH = 4;
@@ -192,6 +200,7 @@ public class SecretHitlerServer {
         serverApp.get("/new-lobby", SecretHitlerServer::createNewLobby); // Creates and returns the code for a new lobby
         serverApp.get("/ping", SecretHitlerServer::ping);
         serverApp.get("/join-url", SecretHitlerServer::joinUrl);
+        serverApp.get(AVATAR_PATH + "/{id}", SecretHitlerServer::avatar);
 
         serverApp.ws("/game", wsHandler -> {
             wsHandler.onConnect(SecretHitlerServer::onWebsocketConnect);
@@ -433,6 +442,26 @@ public class SecretHitlerServer {
     }
 
     /**
+     * GET /avatar/{id}: serves an uploaded photo. A photo id names its bytes
+     * (it is a hash of them), so the response can be cached forever.
+     *
+     * @effects 200 with the image, or 404 if no photo with that id is stored.
+     */
+    public static void avatar(Context ctx) {
+        AvatarStore.Avatar avatar = AvatarStore.get(ctx.pathParam("id"));
+        if (avatar == null) {
+            ctx.status(404);
+            ctx.result("No such avatar.");
+            return;
+        }
+        ctx.status(200);
+        ctx.header("Cache-Control", "public, max-age=31536000, immutable");
+        ctx.header("X-Content-Type-Options", "nosniff");
+        ctx.contentType(avatar.mimeType);
+        ctx.result(avatar.bytes());
+    }
+
+    /**
      * Determines whether a login is valid.
      * 
      * @param ctx the context of the login request.
@@ -664,8 +693,11 @@ public class SecretHitlerServer {
         String name = message.getString(PARAM_NAME);
         String lobbyCode = message.getString(PARAM_LOBBY);
 
+        String rawMessage = ctx.message();
+        String loggedMessage = rawMessage.length() <= MAX_LOGGED_MESSAGE_LENGTH ? rawMessage
+                : rawMessage.substring(0, MAX_LOGGED_MESSAGE_LENGTH) + "... (" + rawMessage.length() + " chars)";
         String logMessage = "Received a message from user '" + name + "' in lobby '" + lobbyCode + "' ("
-                + ctx.message() + "): ";
+                + loggedMessage + "): ";
 
         if (!codeToLobby.containsKey(lobbyCode)) {
             logger.debug(logMessage + " FAILED (Lobby requested does not exist)");
@@ -772,8 +804,17 @@ public class SecretHitlerServer {
                         lobby.game().endPresidentialTerm();
                         break;
 
-                    case COMMAND_SELECT_ICON:
+                    case COMMAND_SELECT_ICON: // params: PARAM_ICON (portrait id, "photo:" id or photo data URL)
                         String iconId = message.getString(PARAM_ICON);
+                        if (iconId.startsWith("data:")) {
+                            // Keep the bytes once; the lobby and every packet carry only the id.
+                            iconId = AvatarStore.store(iconId);
+                        }
+                        if (!Lobby.isValidIconId(iconId)) {
+                            // Skip rather than throw: an exception here would close the socket.
+                            logger.warn(logMessage + " IGNORED (invalid icon)");
+                            break;
+                        }
                         lobby.trySetUserIcon(iconId, ctx);
                         break;
 

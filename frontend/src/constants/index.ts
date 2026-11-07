@@ -38,6 +38,10 @@ export const CHECK_LOGIN = "/check-login";
 export const NEW_LOBBY = "/new-lobby";
 export const WEBSOCKET = "/game";
 export const SERVER_PING = "/ping";
+// GET <AVATAR>/<photo id> serves an uploaded photo. Must match
+// SecretHitlerServer.AVATAR_PATH and AvatarStore.ID_PREFIX on the backend.
+export const AVATAR = "/avatar";
+export const PHOTO_ICON_PREFIX = "photo:";
 export const MAX_FAILED_CONNECTIONS = 12; // with backoff this is roughly a minute of retrying
 export const LOBBY_CODE_LENGTH = 4;
 export const SERVER_TIMEOUT = 4000;
@@ -63,7 +67,7 @@ export const PACKET_PONG = "pong";
 export const PARAM_COMMAND = "command";
 export const PARAM_NAME = "name";
 export const PARAM_LOBBY = "lobby";
-export const PARAM_ICON = "icon"; // id of the selected portrait.
+export const PARAM_ICON = "icon"; // portrait id or "photo:" id; select-icon may also send a photo data URL.
 export const PARAM_VOTE = "vote";
 export const PARAM_VETO = "veto"; // the veto decision (yes/no)
 export const PARAM_CHOICE = "choice"; // the index of the chosen policy.

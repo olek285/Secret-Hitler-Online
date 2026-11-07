@@ -16,6 +16,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -67,6 +68,24 @@ public class Lobby implements Serializable {
     transient private Timer cpuTickTimer = new Timer();
 
     static String DEFAULT_ICON = "p_default";
+
+    // Portrait ids are short names like "p7" or "p_default".
+    private static final Pattern PORTRAIT_ID = Pattern.compile("^[A-Za-z0-9_-]{1,32}$");
+
+    /**
+     * Returns whether a lobby may store {@code iconID}: a portrait id, or the id
+     * of a photo that {@link AvatarStore} holds. Raw image data never qualifies;
+     * the server turns an uploaded data URL into a photo id first.
+     */
+    public static boolean isValidIconId(String iconID) {
+        if (iconID == null) {
+            return false;
+        }
+        if (iconID.startsWith(AvatarStore.ID_PREFIX)) {
+            return AvatarStore.has(iconID);
+        }
+        return PORTRAIT_ID.matcher(iconID).matches();
+    }
 
     /**
      * Constructs a new Lobby.
@@ -506,15 +525,19 @@ public class Lobby implements Serializable {
      * 
      * @param iconID the ID of the new icon to give the player.
      * @param user   the user to change the icon of.
-     * @effects If no other user has the given {@code iconID}, sets the icon of the
-     *          {@code user}
-     *          to {@code iconID}. (exception is for the default value.)
+     * @effects If {@code iconID} is valid ({@link #isValidIconId}) and no other
+     *          user has it, sets the icon of the {@code user} to {@code iconID}.
+     *          (exception is for the default value.) A photo that is no longer
+     *          stored, e.g. a remembered choice after a restart, is ignored.
      * @throws IllegalArgumentException if {@code user} is not in the game.
      */
     synchronized public void trySetUserIcon(String iconID, WsContext user) {
         // Verify that the user exists.
         if (!hasUser(user)) {
             throw new IllegalArgumentException("User is not in this lobby.");
+        }
+        if (!isValidIconId(iconID)) {
+            return;
         }
 
         String username = userToUsername.get(user);

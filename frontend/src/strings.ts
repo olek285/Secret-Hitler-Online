@@ -163,6 +163,11 @@ export const prompts = {
   // Player look
   lookLabel: "TWÓJ WYGLĄD",
   lookHelp: "Wybierz wygląd i stuknij POTWIERDŹ.",
+  // Photo tile (first in the grid). Errors replace lookHelp, so keep them to one line.
+  lookPhoto: "ZDJĘCIE",
+  lookPhotoChange: "ZMIEŃ",
+  lookPhotoTooBig: "Zdjęcie jest za duże (maks. 25 MB).",
+  lookPhotoError: "Nie da się użyć tego zdjęcia.",
 
   // Nomination and voting
   nominationLabel: "NOMINACJA",
@@ -302,4 +307,7 @@ export const alt = {
       ? `Talia (ustaw: ${count}).`
       : `Odrzucone ustawy (${count}).`,
   playerWithRole: (name: string, role: string) => `${name} (${roleName(role)})`,
+  playerPhoto: (name: string) => `Zdjęcie: ${name}.`,
+  yourPhoto: "Twoje zdjęcie.",
+  addPhoto: "Dodaj zdjęcie.",
 };

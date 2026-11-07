@@ -15,8 +15,9 @@ import IconBusy from "../assets/player-icon-busy.png";
 
 import YesVote from "../assets/player-icon-ja.png";
 import NoVote from "../assets/player-icon-nein.png";
-import portraits, {portraitsAltText} from "../assets";
+import portraits, {defaultPortrait, portraitsAltText} from "../assets";
 import { alt, game, roleName } from "../strings";
+import { iconSrc, isPhotoIcon } from "../util/avatar";
 
 const LIBERAL = "LIBERAL";
 const FASCIST = "FASCIST";
@@ -32,6 +33,15 @@ class Player extends Component {
         this.state = {
             initialState: true,
             initialVoteState: true,
+            // A photo icon that failed to load (e.g. the server restarted); shown as the default portrait.
+            failedIcon: undefined,
+        }
+        this.onIconError = this.onIconError.bind(this);
+    }
+
+    onIconError() {
+        if (isPhotoIcon(this.props.icon) && this.state.failedIcon !== this.props.icon) {
+            this.setState({failedIcon: this.props.icon});
         }
     }
 
@@ -168,9 +178,14 @@ class Player extends Component {
                 />
 
                 <img id={"player-icon"}
-                     alt={portraitsAltText[this.props.icon]}
-                     src={portraits[this.props.icon]}
-                     className={this.getClassName()}
+                     alt={isPhotoIcon(this.props.icon)
+                         ? alt.playerPhoto(this.props.name)
+                         : portraitsAltText[this.props.icon]}
+                     src={this.state.failedIcon === this.props.icon
+                         ? portraits[defaultPortrait]
+                         : iconSrc(this.props.icon)}
+                     className={this.getClassName() + (isPhotoIcon(this.props.icon) ? " player-photo" : "")}
+                     onError={this.onIconError}
                 />
 
                 <img id="player-busy-icon"

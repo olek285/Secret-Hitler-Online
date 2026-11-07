@@ -29,6 +29,14 @@
     user-select: none;
 }
 
+/* Uploaded photos: a circle filling the portrait window (photos are square already). */
+#player-icon.player-photo {
+    aspect-ratio: 1 / 1;
+    height: auto;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
 #player-icon.darken {
     filter: brightness(calc(var(--playerBrightnessFilter) - 5%));
 }

@@ -6,6 +6,7 @@
 
 #icon {
     display: inline;
+    vertical-align: bottom; /* the photo tile is not an image; keep the rows aligned */
     width: 18vmin;
     border-radius: 8%/8%;
     margin: 3px 3px;
@@ -58,3 +59,76 @@
     cursor: not-allowed;
 }
 
+/* ----- Photo tile: first in the grid, same box as a portrait ----- */
+
+#icon.icon-photo {
+    display: inline-block;
+    position: relative;
+    aspect-ratio: 1 / 1;
+    container-type: inline-size;
+}
+
+.icon-photo-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.icon-photo-add {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border: 2px dashed var(--textColorOnDark);
+    border-radius: 8%;
+    color: var(--textColorOnDark);
+    font-family: var(--headerFont);
+    font-size: min(22cqw, 22px);
+    line-height: 1.1;
+}
+
+.icon-photo-plus {
+    font-size: min(45cqw, 48px);
+    line-height: 0.9;
+}
+
+#icon.icon-photo.busy .icon-photo-add {
+    opacity: 0.6;
+}
+
+.icon-photo-change {
+    position: absolute;
+    left: 50%;
+    bottom: 3px;
+    transform: translateX(-50%);
+    padding: 1px 5px;
+    border-radius: 6px;
+    background: rgba(20, 20, 20, 0.8);
+    color: var(--textColorWhite);
+    font-family: var(--textFont);
+    font-weight: 700;
+    font-size: min(17cqw, 14px);
+    line-height: 1.3;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* The tile (a label) opens the picker; the input itself stays invisible. */
+.icon-photo-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.icon-photo-error {
+    color: var(--textColorHighlight);
+    font-weight: 700;
+}
